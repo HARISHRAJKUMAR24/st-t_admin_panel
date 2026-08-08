@@ -84,7 +84,12 @@ window.deleteLogo = function(type) {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
@@ -105,6 +110,7 @@ window.deleteLogo = function(type) {
                     }
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -130,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = document.getElementById('settingsName').value.trim();
             const email = document.getElementById('settingsEmail').value.trim();
             const timezone = document.getElementById('timezone').value;
+            const address = document.getElementById('settingsAddress').value.trim();
 
             if (!name || !email) {
                 Swal.fire({
@@ -164,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('name', name);
             formData.append('email', email);
             formData.append('phone', document.getElementById('settingsPhone').value.trim());
+            formData.append('address', address);
             formData.append('timezone', timezone);
 
             // AJAX request
@@ -171,7 +179,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP error! status: ' + response.status);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     submitBtn.disabled = false;
                     submitText.style.display = 'inline';

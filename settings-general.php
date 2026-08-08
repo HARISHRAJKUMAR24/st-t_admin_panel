@@ -19,9 +19,21 @@ $stmt->execute();
 $settings = $stmt->fetch();
 
 if (!$settings) {
-    $stmt = $pdo->prepare("INSERT INTO settings (id, timezone) VALUES (1, 'Asia/Kolkata')");
+    $stmt = $pdo->prepare("INSERT INTO settings (id, timezone, address) VALUES (1, 'Asia/Kolkata', '')");
     $stmt->execute();
-    $settings = ['id' => 1, 'website_logo' => null, 'favicon' => null, 'panel_logo' => null, 'timezone' => 'Asia/Kolkata'];
+    $settings = [
+        'id' => 1,
+        'website_logo' => null,
+        'favicon' => null,
+        'panel_logo' => null,
+        'timezone' => 'Asia/Kolkata',
+        'address' => '',
+        'site_name' => 'Tour Admin',
+        'contact_email' => '',
+        'contact_phone' => '',
+        'currency' => 'INR',
+        'site_title' => 'Tour Admin Panel'
+    ];
 }
 
 // Timezone list
@@ -111,6 +123,11 @@ $timezones = [
             border-color: #ffd966;
             box-shadow: 0 0 0 4px rgba(255, 215, 100, 0.15);
             background: white;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 60px;
         }
 
         .btn-submit {
@@ -441,13 +458,10 @@ $timezones = [
         </div>
 
         <div class="settings-wrapper">
-            <a href="settings.php" class="back-link">
-                <i class="bi bi-arrow-left me-1"></i> Back to Settings
-            </a>
 
             <div class="settings-header">
                 <h4><i class="bi bi-gear me-2" style="color:#f5b342;"></i>General Settings</h4>
-                <p>Update your account information, website branding, and timezone</p>
+             
             </div>
 
             <div class="settings-container">
@@ -469,6 +483,11 @@ $timezones = [
                             <div class="mb-3">
                                 <label class="form-label">Phone Number</label>
                                 <input type="tel" class="form-control" id="settingsPhone" value="<?= htmlspecialchars($currentUser['phone'] ?? '') ?>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" id="settingsAddress" rows="2" placeholder="Enter your address"><?= htmlspecialchars($settings['address'] ?? '') ?></textarea>
                             </div>
 
                             <div class="mb-3">
@@ -596,7 +615,7 @@ $timezones = [
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="window.location.href='settings.php'">Cancel</button>
                         <button type="submit" class="btn-submit" id="submitBtn">
-                            <span id="submitText"><i class="bi bi-check2 me-2"></i>Save All Settings</span>
+                            <span id="submitText">Save All Settings</span>
                             <span id="submitSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
                         </button>
                     </div>

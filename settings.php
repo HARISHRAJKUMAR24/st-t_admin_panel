@@ -326,47 +326,72 @@ $pageTitle = "Settings";
             <div class="row g-4">
                 <!-- Card 1: General Settings -->
                 <div class="col-md-4">
-                    <div class="settings-card" onclick="openSettingsModal('general')">
-                        <span class="card-badge">Profile</span>
-                        <div class="card-icon general">
-                            <i class="bi bi-person-gear"></i>
+                    <a href="settings-general" class="text-decoration-none">
+                        <div class="settings-card">
+                            <span class="card-badge">Profile</span>
+
+                            <div class="card-icon general">
+                                <i class="bi bi-person-gear"></i>
+                            </div>
+
+                            <h5 class="card-title">General Settings</h5>
+
+                            <p class="card-description">
+                                Update your name, email, and other account details
+                            </p>
+
+                            <div class="card-arrow">
+                                <i class="bi bi-chevron-right fs-4"></i>
+                            </div>
                         </div>
-                        <h5 class="card-title">General Settings</h5>
-                        <p class="card-description">Update your name, email, and other account details</p>
-                        <div class="card-arrow">
-                            <i class="bi bi-chevron-right fs-4"></i>
-                        </div>
-                    </div>
+                    </a>
                 </div>
 
                 <!-- Card 2: Social Links -->
                 <div class="col-md-4">
-                    <div class="settings-card" onclick="openSettingsModal('social')">
-                        <span class="card-badge">Connect</span>
-                        <div class="card-icon social">
-                            <i class="bi bi-share"></i>
+                    <a href="settings-social" class="text-decoration-none">
+                        <div class="settings-card">
+                            <span class="card-badge">Connect</span>
+
+                            <div class="card-icon social">
+                                <i class="bi bi-share"></i>
+                            </div>
+
+                            <h5 class="card-title">Social Links</h5>
+
+                            <p class="card-description">
+                                Add your social media profiles and contact links
+                            </p>
+
+                            <div class="card-arrow">
+                                <i class="bi bi-chevron-right fs-4"></i>
+                            </div>
                         </div>
-                        <h5 class="card-title">Social Links</h5>
-                        <p class="card-description">Add your social media profiles and contact links</p>
-                        <div class="card-arrow">
-                            <i class="bi bi-chevron-right fs-4"></i>
-                        </div>
-                    </div>
+                    </a>
                 </div>
+
 
                 <!-- Card 3: Password Change -->
                 <div class="col-md-4">
-                    <div class="settings-card" onclick="openSettingsModal('password')">
-                        <span class="card-badge">Security</span>
-                        <div class="card-icon password">
-                            <i class="bi bi-shield-lock"></i>
+                    <a href="settings-password.php" class="text-decoration-none">
+                        <div class="settings-card">
+                            <span class="card-badge">Security</span>
+
+                            <div class="card-icon password">
+                                <i class="bi bi-shield-lock"></i>
+                            </div>
+
+                            <h5 class="card-title">Change Password</h5>
+
+                            <p class="card-description">
+                                Update your password to keep your account secure
+                            </p>
+
+                            <div class="card-arrow">
+                                <i class="bi bi-chevron-right fs-4"></i>
+                            </div>
                         </div>
-                        <h5 class="card-title">Change Password</h5>
-                        <p class="card-description">Update your password to keep your account secure</p>
-                        <div class="card-arrow">
-                            <i class="bi bi-chevron-right fs-4"></i>
-                        </div>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
