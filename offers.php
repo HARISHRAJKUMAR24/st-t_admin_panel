@@ -9,24 +9,24 @@ if (!verifyToken($pdo)) {
     exit();
 }
 
-// Get current user
 $currentUser = getCurrentUser($pdo);
-$pageTitle = "Tour Packages";
+$pageTitle = "Offers";
 
-// Get currency code and symbol
+// Get currency from settings
 $currencyCode = getCurrencyCode($pdo);
 $currencySymbol = getCurrencySymbol($currencyCode);
 
-// Fetch all tour packages
-$stmt = $pdo->query("SELECT * FROM tour_packages ORDER BY created_at DESC");
-$packages = $stmt->fetchAll();
+// Fetch all offers
+$stmt = $pdo->query("SELECT * FROM offers ORDER BY created_at DESC");
+$offers = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include_once 'includes/head_links.php'; ?>
-    <title>Tour Packages · Tour Admin</title>
+    <title>Offers · Tour Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .page-wrapper {
             padding: 20px;
@@ -70,7 +70,7 @@ $packages = $stmt->fetchAll();
             color: #ffd966;
         }
 
-        .package-card {
+        .offer-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(4px);
             border-radius: 16px;
@@ -81,49 +81,61 @@ $packages = $stmt->fetchAll();
             height: 100%;
         }
 
-        .package-card:hover {
+        .offer-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 30px rgba(0, 20, 30, 0.08);
             border-color: #ffd966;
         }
 
-        .package-card .package-image {
+        .offer-card .offer-image {
             width: 100%;
-            height: 180px;
+            height: 160px;
             border-radius: 12px;
             overflow: hidden;
             margin-bottom: 1rem;
             background: #f0f3f7;
         }
 
-        .package-card .package-image img {
+        .offer-card .offer-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .package-card .package-id {
+        .offer-card .offer-code {
             font-size: 0.7rem;
             color: #9bb2c5;
             font-weight: 600;
             letter-spacing: 0.5px;
         }
 
-        .package-card .package-name {
+        .offer-card .offer-title {
             font-weight: 600;
             color: #123b4f;
             font-size: 1.1rem;
             margin: 0.25rem 0;
         }
 
-        .package-card .package-meta {
+        .offer-card .offer-discount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dc3545;
+        }
+
+        .offer-card .offer-discount .discount-type {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #5f7d92;
+        }
+
+        .offer-card .offer-meta {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin: 0.5rem 0;
         }
 
-        .package-card .package-meta .badge-custom {
+        .offer-card .offer-meta .badge-custom {
             background: rgba(255, 215, 100, 0.2);
             color: #b8860b;
             padding: 0.2rem 0.8rem;
@@ -132,7 +144,7 @@ $packages = $stmt->fetchAll();
             font-weight: 600;
         }
 
-        .package-card .package-meta .badge-days {
+        .offer-card .offer-meta .badge-date {
             background: rgba(18, 59, 79, 0.1);
             color: #123b4f;
             padding: 0.2rem 0.8rem;
@@ -141,7 +153,7 @@ $packages = $stmt->fetchAll();
             font-weight: 600;
         }
 
-        .package-card .package-meta .badge-status {
+        .offer-card .offer-meta .badge-status {
             padding: 0.2rem 0.8rem;
             border-radius: 20px;
             font-size: 0.7rem;
@@ -158,31 +170,26 @@ $packages = $stmt->fetchAll();
             color: #dc3545;
         }
 
-        .badge-status.upcoming {
+        .badge-status.expired {
             background: rgba(255, 193, 7, 0.15);
             color: #ffc107;
         }
 
-        .package-card .package-price {
-            font-weight: 700;
+        .offer-card .offer-packages {
+            margin: 0.5rem 0;
+        }
+
+        .offer-card .offer-packages .package-tag {
+            display: inline-block;
+            background: rgba(18, 59, 79, 0.05);
             color: #123b4f;
-            font-size: 1.2rem;
+            padding: 0.1rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            margin: 2px;
         }
 
-        .package-card .package-price .currency-symbol {
-            font-weight: 700;
-            margin-right: 2px;
-        }
-
-        .package-card .package-price .discount {
-            color: #dc3545;
-            font-size: 0.9rem;
-            text-decoration: line-through;
-            margin-left: 8px;
-            font-weight: 400;
-        }
-
-        .package-card .package-actions {
+        .offer-card .offer-actions {
             display: flex;
             gap: 8px;
             margin-top: 1rem;
@@ -190,7 +197,7 @@ $packages = $stmt->fetchAll();
             border-top: 1px solid #e8edf3;
         }
 
-        .package-card .package-actions .btn-action {
+        .offer-card .offer-actions .btn-action {
             padding: 0.3rem 1rem;
             border-radius: 8px;
             font-size: 0.8rem;
@@ -222,16 +229,6 @@ $packages = $stmt->fetchAll();
         .btn-action.btn-delete:hover {
             background: #dc3545;
             color: #fff;
-        }
-
-        .btn-action.btn-view {
-            background: rgba(255, 215, 100, 0.2);
-            color: #b8860b;
-        }
-
-        .btn-action.btn-view:hover {
-            background: #ffd966;
-            color: #123b4f;
         }
 
         .empty-state {
@@ -268,8 +265,8 @@ $packages = $stmt->fetchAll();
                 text-align: center;
             }
 
-            .package-card .package-image {
-                height: 140px;
+            .offer-card .offer-image {
+                height: 120px;
             }
         }
     </style>
@@ -287,93 +284,95 @@ $packages = $stmt->fetchAll();
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
-                <small>Tour Packages</small>
+                <small>Offers</small>
             </div>
         </div>
 
         <div class="page-wrapper">
             <div class="page-header">
                 <div>
-                    <h4><i class="bi bi-suitcase me-2" style="color:#f5b342;"></i>Tour Packages</h4>
-                    <p>Manage all your tour packages</p>
+                    <h4><i class="bi bi-tags me-2" style="color:#f5b342;"></i>Offers</h4>
+                    <p>Manage all your promotional offers</p>
                 </div>
-                <a href="add-tour-package.php" class="btn-add">
-                    <i class="bi bi-plus-circle me-2"></i>Add New Package
+                <a href="add-offer.php" class="btn-add">
+                    <i class="bi bi-plus-circle me-2"></i>Add New Offer
                 </a>
             </div>
 
-            <?php if (empty($packages)): ?>
+            <?php if (empty($offers)): ?>
                 <div class="empty-state">
-                    <i class="bi bi-suitcase"></i>
-                    <h5>No Tour Packages Yet</h5>
-                    <p>Create your first tour package to get started.</p>
-                    <a href="add-tour-package.php" class="btn-add" style="display:inline-block;margin-top:1rem;">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Package
-                    </a>
+                    <i class="bi bi-tags"></i>
+                    <h5>No Offers Yet</h5>
+                    <p>Create your first promotional offer to get started.</p>
+                   
                 </div>
             <?php else: ?>
                 <div class="row g-4">
-                    <?php foreach ($packages as $package): ?>
-                        <?php
-                        $gallery = json_decode($package['gallery_images'], true) ?: [];
-                        $features = json_decode($package['features'], true) ?: [];
-                        ?>
+                    <?php foreach ($offers as $offer):
+                        $packageIds = json_decode($offer['tour_packages'], true) ?: [];
+                        $packageNames = [];
+                        if (!empty($packageIds)) {
+                            $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
+                            $stmt = $pdo->prepare("SELECT package_id, package_name FROM tour_packages WHERE id IN ($placeholders)");
+                            $stmt->execute($packageIds);
+                            $packages = $stmt->fetchAll();
+                            foreach ($packages as $pkg) {
+                                $packageNames[] = $pkg['package_name'] . ' (' . $pkg['package_id'] . ')';
+                            }
+                        }
+                    ?>
                         <div class="col-md-6 col-lg-4">
-                            <div class="package-card">
-                                <div class="package-image">
-                                    <?php if (!empty($package['main_image'])): ?>
-                                        <img src="<?= APP_URL . $package['main_image'] ?>" alt="<?= htmlspecialchars($package['package_name']) ?>">
+                            <div class="offer-card">
+                                <div class="offer-image">
+                                    <?php if (!empty($offer['main_image'])): ?>
+                                        <img src="<?= APP_URL . $offer['main_image'] ?>" alt="<?= htmlspecialchars($offer['title']) ?>">
                                     <?php else: ?>
                                         <img src="<?= APP_URL ?>assets/images/no-image.jpg" alt="No image">
                                     <?php endif; ?>
                                 </div>
 
-                                <div class="package-id"><?= htmlspecialchars($package['package_id']) ?></div>
-                                <h5 class="package-name"><?= htmlspecialchars($package['package_name']) ?></h5>
+                                <div class="offer-code"><?= htmlspecialchars($offer['offer_code']) ?></div>
+                                <h5 class="offer-title"><?= htmlspecialchars($offer['title']) ?></h5>
 
-                                <div class="package-meta">
-                                    <span class="badge-days"><i class="bi bi-calendar3 me-1"></i><?= $package['days_count'] ?> Days</span>
-                                    <?php if ($package['adults'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['adults'] ?> Adults</span>
+                                <div class="offer-discount">
+                                    <?php if ($offer['discount_type'] == 'percentage'): ?>
+                                        <?= number_format($offer['discount_value'], 0) ?>%
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($currencySymbol) ?><?= number_format($offer['discount_value'], 2) ?>
                                     <?php endif; ?>
-                                    <?php if ($package['children'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['children'] ?> Children</span>
-                                    <?php endif; ?>
-                                    <?php if ($package['infants'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['infants'] ?> Infants</span>
-                                    <?php endif; ?>
-                                    <span class="badge-status <?= $package['status'] ?>"><?= ucfirst($package['status']) ?></span>
+                                    <span class="discount-type"><?= ucfirst($offer['discount_type']) ?></span>
                                 </div>
 
-                                <?php if (!empty($features)): ?>
-                                    <div style="margin: 0.5rem 0;">
-                                        <?php foreach (array_slice($features, 0, 3) as $feature): ?>
-                                            <span class="badge-custom" style="background:rgba(18,59,79,0.05);color:#123b4f;font-size:0.65rem;">
-                                                <?php if (!empty($feature['icon'])): ?>
-                                                    <img src="<?= APP_URL . $feature['icon'] ?>" style="width:14px;height:14px;object-fit:contain;display:inline;margin-right:4px;">
-                                                <?php else: ?>
-                                                    <i class="bi bi-check-circle-fill" style="font-size:0.6rem;"></i>
-                                                <?php endif; ?>
-                                                <?= htmlspecialchars($feature['name']) ?>
-                                            </span>
+                                <div class="offer-meta">
+                                    <?php if (!empty($offer['start_date'])): ?>
+                                        <span class="badge-date"><i class="bi bi-calendar3 me-1"></i><?= date('M d, Y', strtotime($offer['start_date'])) ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($offer['end_date'])): ?>
+                                        <span class="badge-date"><i class="bi bi-calendar3 me-1"></i>Until <?= date('M d, Y', strtotime($offer['end_date'])) ?></span>
+                                    <?php endif; ?>
+                                    <span class="badge-status <?= $offer['status'] ?>"><?= ucfirst($offer['status']) ?></span>
+                                </div>
+
+                                <?php if (!empty($packageNames)): ?>
+                                    <div class="offer-packages">
+                                        <?php foreach (array_slice($packageNames, 0, 3) as $name): ?>
+                                            <span class="package-tag"><?= htmlspecialchars($name) ?></span>
                                         <?php endforeach; ?>
-                                        <?php if (count($features) > 3): ?>
-                                            <span class="badge-custom" style="background:rgba(18,59,79,0.05);color:#123b4f;font-size:0.65rem;">+<?= count($features) - 3 ?> more</span>
+                                        <?php if (count($packageNames) > 3): ?>
+                                            <span class="package-tag">+<?= count($packageNames) - 3 ?> more</span>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 
-                                <div class="package-price">
-                                    <span class="currency-symbol"><?= htmlspecialchars($currencySymbol) ?></span>
-                                    <?= number_format($package['price'], 2) ?>
-                                </div>
+                                <?php if (!empty($offer['description'])): ?>
+                                    <p style="font-size:0.8rem;color:#5f7d92;margin:0.5rem 0;"><?= htmlspecialchars(substr($offer['description'], 0, 80)) ?>...</p>
+                                <?php endif; ?>
 
-                                <div class="package-actions">
-                                    <!-- Edit link using package_id instead of id -->
-                                    <a href="edit-tour-package.php?package_id=<?= $package['package_id'] ?>" class="btn-action btn-edit">
+                                <div class="offer-actions">
+                                    <a href="edit-offer.php?offer_id=<?= $offer['offer_code'] ?>" class="btn-action btn-edit">
                                         <i class="bi bi-pencil"></i> Edit
                                     </a>
-                                    <button class="btn-action btn-delete" onclick="deletePackage(<?= $package['id'] ?>, '<?= $package['package_id'] ?>')">
+                                    <button class="btn-action btn-delete" onclick="deleteOffer(<?= $offer['id'] ?>, '<?= $offer['offer_code'] ?>')">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </div>
@@ -385,12 +384,11 @@ $packages = $stmt->fetchAll();
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function deletePackage(id, packageId) {
+        function deleteOffer(id, offerCode) {
             Swal.fire({
-                title: 'Delete Package?',
-                text: 'Are you sure you want to delete package ' + packageId + '? This action cannot be undone.',
+                title: 'Delete Offer?',
+                text: 'Are you sure you want to delete offer ' + offerCode + '? This action cannot be undone.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -400,7 +398,7 @@ $packages = $stmt->fetchAll();
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: 'Deleting...',
-                        text: 'Please wait while we delete the package.',
+                        text: 'Please wait while we delete the offer.',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -410,16 +408,11 @@ $packages = $stmt->fetchAll();
                     const formData = new FormData();
                     formData.append('id', id);
 
-                    fetch('ajax/delete-tour-package.php', {
+                    fetch('ajax/delete-offer.php', {
                             method: 'POST',
                             body: formData
                         })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
+                        .then(response => response.json())
                         .then(data => {
                             if (data.success) {
                                 Swal.fire({
@@ -453,6 +446,7 @@ $packages = $stmt->fetchAll();
             });
         }
     </script>
+    <script src="<?= APP_URL ?>javascript/main.js"></script>
 </body>
 
 </html>

@@ -12,6 +12,10 @@ if (!verifyToken($pdo)) {
 // Get current user
 $currentUser = getCurrentUser($pdo);
 
+// Get currency from settings
+$currencyCode = getCurrencyCode($pdo);
+$currencySymbol = getCurrencySymbol($currencyCode);
+
 // Fetch car rentals
 $stmt = $pdo->query("SELECT * FROM car_rentals ORDER BY created_at DESC");
 $carRentals = $stmt->fetchAll();
@@ -94,6 +98,11 @@ $carRentals = $stmt->fetchAll();
             font-weight: 700;
             color: #0b2a3e;
             font-size: 1rem;
+        }
+
+        .car-card .price .currency-symbol {
+            font-weight: 700;
+            margin-right: 1px;
         }
 
         .car-card .price small {
@@ -186,6 +195,26 @@ $carRentals = $stmt->fetchAll();
             font-weight: 500;
         }
 
+        .btn-add {
+            background: linear-gradient(145deg, #0b2a3e 0%, #123b4f 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 0.4rem 1.2rem;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(11, 42, 62, 0.2);
+            color: #ffd966;
+        }
+
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
@@ -200,6 +229,11 @@ $carRentals = $stmt->fetchAll();
 
         .empty-state h5 {
             color: #123b4f;
+        }
+
+        .empty-state .btn-add {
+            display: inline-flex;
+            margin-top: 1rem;
         }
 
         @media (max-width: 576px) {
@@ -241,69 +275,75 @@ $carRentals = $stmt->fetchAll();
         </div>
 
         <!-- ====== CAR RENTALS LIST ====== -->
-        <div class="section-header">
-            <h4><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Car Rentals</h4>
-            <div>
-                <span class="badge-count"><i class="bi bi-car-front me-1"></i><?= count($carRentals) ?> cars</span>
-                <a href="add-car-rental.php" class="btn btn-primary ms-2" style="border-radius:12px; background:linear-gradient(145deg,#0b2a3e,#123b4f); border:none; padding:0.4rem 1.2rem; font-size:0.85rem;">
-                    <i class="bi bi-plus-circle me-1"></i>Add New
-                </a>
+        <div class="container-fluid px-0">
+            <div class="section-header">
+                <h4><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Car Rentals</h4>
+                <div>
+                    <span class="badge-count"><i class="bi bi-car-front me-1"></i><?= count($carRentals) ?> cars</span>
+                    <a href="add-car-rental.php" class="btn-add ms-2">
+                        <i class="bi bi-plus-circle me-1"></i>Add New
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <?php if (empty($carRentals)): ?>
-            <div class="empty-state">
-                <i class="bi bi-car-front"></i>
-                <h5>No cars added yet</h5>
-                <p class="text-muted">Click "Add New" to add your first car rental.</p>
-            </div>
-        <?php else: ?>
-            <div class="row g-3">
-                <?php foreach ($carRentals as $car): ?>
-                    <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                        <div class="car-card">
-                            <img src="<?= APP_URL . $car['car_image'] ?>"
-                                alt="<?= htmlspecialchars($car['car_name']) ?>"
-                                class="car-image"
-                                onerror="this.src='https://via.placeholder.com/300x140/123b4f/ffffff?text=Car'">
-                            <div class="car-body">
-                                <div class="car-name" title="<?= htmlspecialchars($car['car_name']) ?>">
-                                    <?= htmlspecialchars($car['car_name']) ?>
-                                </div>
-                                <div class="car-details">
-                                    <?php if ($car['car_brand']): ?>
-                                        <span><i class="bi bi-building"></i><?= htmlspecialchars($car['car_brand']) ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($car['car_model']): ?>
-                                        <span><i class="bi bi-tag"></i><?= htmlspecialchars($car['car_model']) ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($car['seating_capacity'] > 0): ?>
-                                        <span><i class="bi bi-people"></i><?= $car['seating_capacity'] ?> seats</span>
-                                    <?php endif; ?>
-                                    <?php if ($car['fuel_type']): ?>
-                                        <span><i class="bi bi-fuel-pump"></i><?= htmlspecialchars($car['fuel_type']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="car-price">
-                                    <span class="price">$<?= number_format($car['per_day_amount'], 2) ?> <small>/ day</small></span>
-                                    <span class="status-badge status-<?= $car['status'] ?>"><?= $car['status'] ?></span>
-                                </div>
-                                <div class="car-actions">
-                                    <button class="btn-sm btn-edit" onclick="editCar(<?= $car['id'] ?>)">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </button>
-                                    <button class="btn-sm btn-delete" onclick="deleteCar(<?= $car['id'] ?>)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+            <?php if (empty($carRentals)): ?>
+                <div class="empty-state">
+                    <i class="bi bi-car-front"></i>
+                    <h5>No cars added yet</h5>
+                    <p class="text-muted">Click "Add New" to add your first car rental.</p>
+                   
+                </div>
+            <?php else: ?>
+                <div class="row g-3">
+                    <?php foreach ($carRentals as $car): ?>
+                        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
+                            <div class="car-card">
+                                <img src="<?= APP_URL . $car['car_image'] ?>"
+                                    alt="<?= htmlspecialchars($car['car_name']) ?>"
+                                    class="car-image"
+                                    onerror="this.src='https://via.placeholder.com/300x140/123b4f/ffffff?text=Car'">
+                                <div class="car-body">
+                                    <div class="car-name" title="<?= htmlspecialchars($car['car_name']) ?>">
+                                        <?= htmlspecialchars($car['car_name']) ?>
+                                    </div>
+                                    <div class="car-details">
+                                        <?php if ($car['car_brand']): ?>
+                                            <span><i class="bi bi-building"></i><?= htmlspecialchars($car['car_brand']) ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($car['car_model']): ?>
+                                            <span><i class="bi bi-tag"></i><?= htmlspecialchars($car['car_model']) ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($car['seating_capacity'] > 0): ?>
+                                            <span><i class="bi bi-people"></i><?= $car['seating_capacity'] ?> seats</span>
+                                        <?php endif; ?>
+                                        <?php if ($car['fuel_type']): ?>
+                                            <span><i class="bi bi-fuel-pump"></i><?= htmlspecialchars($car['fuel_type']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="car-price">
+                                        <span class="price">
+                                            <span class="currency-symbol"><?= htmlspecialchars($currencySymbol) ?></span>
+                                            <?= number_format($car['per_day_amount'], 2) ?>
+                                            <small>/ day</small>
+                                        </span>
+                                        <span class="status-badge status-<?= $car['status'] ?>"><?= $car['status'] ?></span>
+                                    </div>
+                                    <div class="car-actions">
+                                        <button class="btn-sm btn-edit" onclick="editCar(<?= $car['id'] ?>)">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                        <button class="btn-sm btn-delete" onclick="deleteCar(<?= $car['id'] ?>)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
 
-        
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">

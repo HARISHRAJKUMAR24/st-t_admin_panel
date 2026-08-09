@@ -1,25 +1,88 @@
 // =============================================
-// ADD TOUR PACKAGE - JAVASCRIPT (FIXED)
+// EDIT TOUR PACKAGE - JAVASCRIPT
 // =============================================
 
 let features = [];
 let members = [];
 let featureIconFile = null;
 let featureIconPreviewData = null;
+let deletedGalleryImages = [];
+let mainImageDeleted = false;
 
 // =============================================
 // INITIALIZE
 // =============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Add first day by default
-    addDay();
+document.addEventListener('DOMContentLoaded', function () {
+    // Load existing features from HTML
+    loadExistingFeatures();
+
+    // Load existing members from HTML
+    loadExistingMembers();
 
     // Setup image uploads
     setupImageUpload('mainImage', 'mainImagePreview', 'mainImageBox', true);
     setupGalleryUpload('galleryImages', 'galleryImagesPreview', 'galleryImagesBox');
     setupFeatureIconUpload();
+
+    // Update counts
+    updateDayCount();
+    updateFeatureCount();
+
+    // Setup delete handlers
+    setupDeleteHandlers();
 });
+
+// =============================================
+// LOAD EXISTING FEATURES
+// =============================================
+
+function loadExistingFeatures() {
+    const container = document.getElementById('featuresContainer');
+    const items = container.querySelectorAll('.badge-item');
+
+    items.forEach((item) => {
+        const nameSpan = item.querySelector('.badge-name');
+        const iconImg = item.querySelector('.badge-icon');
+        const name = nameSpan ? nameSpan.textContent : '';
+        const icon = iconImg ? iconImg.getAttribute('src') : null;
+
+        features.push({
+            name: name,
+            icon: icon,
+            iconFile: null,
+            iconPreview: null
+        });
+    });
+
+    // Clear HTML features (will be re-rendered by JS)
+    container.innerHTML = '';
+    renderFeatures();
+}
+
+// =============================================
+// LOAD EXISTING MEMBERS
+// =============================================
+
+function loadExistingMembers() {
+    const container = document.getElementById('membersList');
+    const items = container.querySelectorAll('.member-badge');
+
+    items.forEach((item) => {
+        const labelSpan = item.querySelector('.member-label');
+        const countSpan = item.querySelector('.member-count');
+        const label = labelSpan ? labelSpan.textContent : '';
+        const count = countSpan ? parseInt(countSpan.textContent) : 0;
+
+        if (label) {
+            members.push({ label: label, count: count });
+        }
+    });
+
+    // Clear HTML members (will be re-rendered by JS)
+    container.innerHTML = '';
+    renderMembers();
+}
 
 // =============================================
 // MEMBERS (Badge Style)
@@ -43,13 +106,12 @@ function addMember(label = '', count = 0) {
         return;
     }
 
-    // Check if member type already exists
     const existing = members.find(m => m.label.toLowerCase() === memberLabel.toLowerCase());
     if (existing) {
         Swal.fire({
             icon: 'warning',
             title: 'Duplicate Member Type',
-            text: `"${memberLabel}" already exists. Please use a different name.`,
+            text: `"${memberLabel}" already exists.`,
             confirmButtonColor: '#123b4f'
         });
         return;
@@ -61,8 +123,6 @@ function addMember(label = '', count = 0) {
     });
 
     renderMembers();
-
-    // Clear inputs
     labelInput.value = '';
     countInput.value = '0';
     labelInput.focus();
@@ -93,7 +153,6 @@ function renderMembers() {
         container.appendChild(badge);
     });
 
-    // Update hidden input
     document.getElementById('members').value = JSON.stringify(members);
 }
 
@@ -107,20 +166,20 @@ function setupImageUpload(inputId, previewId, boxId, isSingle) {
     const preview = document.getElementById(previewId);
 
     if (box) {
-        box.addEventListener('click', function() {
+        box.addEventListener('click', function () {
             input.click();
         });
     }
 
     if (input) {
-        input.addEventListener('change', function(e) {
+        input.addEventListener('change', function (e) {
             const files = e.target.files;
             preview.innerHTML = '';
 
             if (files.length > 0) {
                 const file = files[0];
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const div = document.createElement('div');
                     div.className = 'image-preview-item';
                     const img = document.createElement('img');
@@ -132,7 +191,7 @@ function setupImageUpload(inputId, previewId, boxId, isSingle) {
                         const removeBtn = document.createElement('button');
                         removeBtn.className = 'remove-image';
                         removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                        removeBtn.onclick = function(e) {
+                        removeBtn.onclick = function (e) {
                             e.stopPropagation();
                             div.remove();
                             const dt = new DataTransfer();
@@ -143,7 +202,7 @@ function setupImageUpload(inputId, previewId, boxId, isSingle) {
                             }
                             input.files = dt.files;
                             if (preview.children.length === 0) {
-                                preview.innerHTML = '<div class="image-preview-empty">No images selected</div>';
+                                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
                             }
                         };
                         div.appendChild(removeBtn);
@@ -152,7 +211,7 @@ function setupImageUpload(inputId, previewId, boxId, isSingle) {
                 };
                 reader.readAsDataURL(file);
             } else {
-                preview.innerHTML = '<div class="image-preview-empty">No image selected</div>';
+                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
             }
         });
     }
@@ -164,25 +223,25 @@ function setupGalleryUpload(inputId, previewId, boxId) {
     const preview = document.getElementById(previewId);
 
     if (box) {
-        box.addEventListener('click', function() {
+        box.addEventListener('click', function () {
             input.click();
         });
     }
 
     if (input) {
-        input.addEventListener('change', function(e) {
+        input.addEventListener('change', function (e) {
             const files = e.target.files;
             preview.innerHTML = '';
 
             if (files.length === 0) {
-                preview.innerHTML = '<div class="image-preview-empty">No images selected</div>';
+                preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
                 return;
             }
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const div = document.createElement('div');
                     div.className = 'image-preview-item';
                     const img = document.createElement('img');
@@ -193,7 +252,7 @@ function setupGalleryUpload(inputId, previewId, boxId) {
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-image';
                     removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                    removeBtn.onclick = function(e) {
+                    removeBtn.onclick = function (e) {
                         e.stopPropagation();
                         div.remove();
                         const dt = new DataTransfer();
@@ -204,7 +263,7 @@ function setupGalleryUpload(inputId, previewId, boxId) {
                         }
                         input.files = dt.files;
                         if (preview.children.length === 0) {
-                            preview.innerHTML = '<div class="image-preview-empty">No images selected</div>';
+                            preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
                         }
                     };
                     div.appendChild(removeBtn);
@@ -217,22 +276,58 @@ function setupGalleryUpload(inputId, previewId, boxId) {
 }
 
 // =============================================
-// FEATURE ICON UPLOAD (FIXED - Using Label)
+// DELETE IMAGE FUNCTIONS
+// =============================================
+
+function deleteMainImage() {
+    const imgWrapper = document.querySelector('.current-image-item');
+    if (imgWrapper) {
+        imgWrapper.remove();
+    }
+    mainImageDeleted = true;
+    document.getElementById('deleteMainImage').value = '1';
+}
+
+function deleteGalleryImage(index, imagePath) {
+    const imgItem = document.querySelector(`.current-image-item[data-gallery-index="${index}"]`);
+    if (imgItem) {
+        imgItem.remove();
+    }
+
+    deletedGalleryImages.push(imagePath);
+    document.getElementById('deletedGalleryImages').value = JSON.stringify(deletedGalleryImages);
+}
+
+function setupDeleteHandlers() {
+    // Setup delete gallery image handlers for existing images
+    document.querySelectorAll('.current-image-item[data-gallery-index]').forEach(item => {
+        const btn = item.querySelector('.delete-image-btn');
+        if (btn) {
+            btn.onclick = function () {
+                const index = parseInt(item.dataset.galleryIndex);
+                const img = item.querySelector('img');
+                if (img) {
+                    const src = img.getAttribute('src');
+                    const path = src.replace('<?= APP_URL ?>', '');
+                    deleteGalleryImage(index, path);
+                }
+            };
+        }
+    });
+}
+
+// =============================================
+// FEATURE ICON UPLOAD
 // =============================================
 
 function setupFeatureIconUpload() {
     const input = document.getElementById('featureIcon');
     const box = document.getElementById('featureIconBox');
 
-    console.log('Setting up feature icon upload...');
-
     if (input) {
-        input.addEventListener('change', function(e) {
+        input.addEventListener('change', function (e) {
             const file = e.target.files[0];
-            console.log('File selected:', file ? file.name : 'None');
-
             if (file) {
-                // Validate file size (max 1MB)
                 if (file.size > 1 * 1024 * 1024) {
                     Swal.fire({
                         icon: 'error',
@@ -244,7 +339,6 @@ function setupFeatureIconUpload() {
                     return;
                 }
 
-                // Validate file type
                 const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon'];
                 if (!allowedTypes.includes(file.type)) {
                     Swal.fire({
@@ -257,32 +351,23 @@ function setupFeatureIconUpload() {
                     return;
                 }
 
-                // Store the file
                 featureIconFile = file;
 
-                // Create preview
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     featureIconPreviewData = e.target.result;
                     const previewDiv = document.getElementById('featureIconPreview');
                     const previewImg = document.getElementById('featureIconPreviewImg');
                     const previewName = document.getElementById('featureIconPreviewName');
 
-                    if (previewImg) {
-                        previewImg.src = e.target.result;
-                    }
-                    if (previewName) {
-                        previewName.textContent = file.name;
-                    }
-                    if (previewDiv) {
-                        previewDiv.style.display = 'block';
-                    }
+                    if (previewImg) previewImg.src = e.target.result;
+                    if (previewName) previewName.textContent = file.name;
+                    if (previewDiv) previewDiv.style.display = 'block';
 
-                    // Update the upload box
                     const boxElement = document.getElementById('featureIconBox');
                     const labelSpan = document.getElementById('featureIconLabel');
                     const icon = boxElement.querySelector('i');
-                    
+
                     if (boxElement) {
                         boxElement.classList.add('has-file');
                         if (icon) icon.style.color = '#28a745';
@@ -296,34 +381,6 @@ function setupFeatureIconUpload() {
             }
         });
     }
-
-    // Add drag and drop support
-    if (box) {
-        box.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#ffd966';
-            this.style.background = 'rgba(255,215,100,0.1)';
-        });
-
-        box.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#e8edf3';
-            this.style.background = 'rgba(255,255,255,0.4)';
-        });
-
-        box.addEventListener('drop', function(e) {
-            e.preventDefault();
-            this.style.borderColor = '#e8edf3';
-            this.style.background = 'rgba(255,255,255,0.4)';
-
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const input = document.getElementById('featureIcon');
-                input.files = files;
-                input.dispatchEvent(new Event('change'));
-            }
-        });
-    }
 }
 
 function removeFeatureIconPreview() {
@@ -332,11 +389,10 @@ function removeFeatureIconPreview() {
     document.getElementById('featureIcon').value = '';
     document.getElementById('featureIconPreview').style.display = 'none';
 
-    // Reset the upload box
     const boxElement = document.getElementById('featureIconBox');
     const labelSpan = document.getElementById('featureIconLabel');
     const icon = boxElement.querySelector('i');
-    
+
     if (boxElement) {
         boxElement.classList.remove('has-file');
         if (icon) icon.style.color = '#9bb2c5';
@@ -348,7 +404,7 @@ function removeFeatureIconPreview() {
 }
 
 // =============================================
-// ITINERARY (with Day Title & Description)
+// ITINERARY
 // =============================================
 
 function addDay() {
@@ -374,7 +430,6 @@ function addDay() {
         <textarea class="form-control" id="itinerary_${dayNumber}" rows="2" placeholder="Enter description for Day ${dayNumber}"></textarea>
     `;
     container.appendChild(dayDiv);
-
     updateDayCount();
 }
 
@@ -402,9 +457,7 @@ function renumberDays() {
         const dayNumber = i + 1;
         day.id = 'day-' + dayNumber;
         const numberSpan = day.querySelector('.day-number');
-        if (numberSpan) {
-            numberSpan.textContent = dayNumber;
-        }
+        if (numberSpan) numberSpan.textContent = dayNumber;
         const label = day.querySelector('.day-label');
         if (label) {
             label.innerHTML = `
@@ -415,7 +468,6 @@ function renumberDays() {
         const titleInput = day.querySelector('.day-title-input input');
         if (titleInput) {
             titleInput.id = 'day_title_' + dayNumber;
-            titleInput.placeholder = 'Enter day title (e.g., Arrival & Welcome)';
         }
         const textarea = day.querySelector('textarea');
         if (textarea) {
@@ -431,7 +483,7 @@ function updateDayCount() {
 }
 
 // =============================================
-// FEATURES (with Icon Upload)
+// FEATURES
 // =============================================
 
 function addFeature() {
@@ -449,20 +501,18 @@ function addFeature() {
         return;
     }
 
-    // Check if feature already exists
     const existing = features.find(f => f.name.toLowerCase() === name.toLowerCase());
     if (existing) {
         Swal.fire({
             icon: 'warning',
             title: 'Duplicate Feature',
-            text: `"${name}" already exists in the features list`,
+            text: `"${name}" already exists.`,
             confirmButtonColor: '#123b4f'
         });
         input.focus();
         return;
     }
 
-    // Create feature with icon
     const feature = {
         name: name,
         icon: featureIconFile ? featureIconFile.name : null,
@@ -473,18 +523,16 @@ function addFeature() {
     features.push(feature);
     renderFeatures();
 
-    // Clear inputs
     input.value = '';
     featureIconFile = null;
     featureIconPreviewData = null;
     document.getElementById('featureIcon').value = '';
     document.getElementById('featureIconPreview').style.display = 'none';
 
-    // Reset upload box
     const boxElement = document.getElementById('featureIconBox');
     const labelSpan = document.getElementById('featureIconLabel');
     const icon = boxElement.querySelector('i');
-    
+
     if (boxElement) {
         boxElement.classList.remove('has-file');
         if (icon) icon.style.color = '#9bb2c5';
@@ -498,6 +546,15 @@ function addFeature() {
 }
 
 function removeFeature(index) {
+    // Check if this feature has an icon that needs to be deleted
+    const feature = features[index];
+    if (feature && feature.icon && !feature.icon.startsWith('data:')) {
+        // This is an existing feature with an icon path - mark for deletion
+        const deletedFeatures = JSON.parse(document.getElementById('deletedFeatures').value || '[]');
+        deletedFeatures.push(feature.icon);
+        document.getElementById('deletedFeatures').value = JSON.stringify(deletedFeatures);
+    }
+
     features.splice(index, 1);
     renderFeatures();
     updateFeatureCount();
@@ -519,8 +576,10 @@ function renderFeatures() {
         let iconHtml = '';
         if (feature.iconPreview) {
             iconHtml = `<img src="${feature.iconPreview}" class="badge-icon" alt="icon">`;
-        } else if (feature.icon && typeof feature.icon === 'string' && feature.icon.startsWith('http')) {
-            iconHtml = `<img src="${escapeHtml(feature.icon)}" class="badge-icon" alt="icon">`;
+        } else if (feature.icon && typeof feature.icon === 'string') {
+            // Check if it's a full URL or just a path
+            const iconSrc = feature.icon.startsWith('http') ? feature.icon : '<?= APP_URL ?>' + feature.icon;
+            iconHtml = `<img src="${iconSrc}" class="badge-icon" alt="icon">`;
         }
 
         badge.innerHTML = `
@@ -551,11 +610,11 @@ function escapeHtml(text) {
 // FORM SUBMISSION
 // =============================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('tourPackageForm');
 
     if (form) {
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', function (e) {
             e.preventDefault();
 
             // Validate required fields
@@ -563,7 +622,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const daysCount = document.getElementById('daysCount').value;
             const price = document.getElementById('price').value;
             const shortDescription = document.getElementById('shortDescription').value.trim();
-            const mainImage = document.getElementById('mainImage').files[0];
 
             if (!packageName) {
                 Swal.fire({
@@ -609,17 +667,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!mainImage) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    text: 'Main image is required',
-                    confirmButtonColor: '#123b4f'
-                });
-                return;
-            }
-
-            // Collect itinerary with day titles
+            // Collect itinerary
             const itinerary = {};
             const dayElements = document.querySelectorAll('#itineraryContainer .itinerary-day');
             dayElements.forEach((dayElement, index) => {
@@ -644,6 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Prepare form data
             const formData = new FormData();
+            formData.append('id', document.getElementById('packageId').value);
             formData.append('package_name', packageName);
             formData.append('package_type', document.getElementById('packageType').value);
             formData.append('days_count', daysCount);
@@ -660,22 +709,32 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('description', document.getElementById('description').value.trim());
             formData.append('itinerary', JSON.stringify(itinerary));
 
-            // Features with icons
+            // Features
             const featuresData = features.map(f => ({
                 name: f.name,
                 icon: f.icon || null
             }));
             formData.append('features', JSON.stringify(featuresData));
 
-            // Images
-            formData.append('main_image', mainImage);
+            // Deleted features (icons to remove)
+            const deletedFeatures = JSON.parse(document.getElementById('deletedFeatures').value || '[]');
+            formData.append('deleted_features', JSON.stringify(deletedFeatures));
 
+            // Main image
+            const mainImage = document.getElementById('mainImage').files[0];
+            if (mainImage) {
+                formData.append('main_image', mainImage);
+            }
+            formData.append('delete_main_image', document.getElementById('deleteMainImage').value);
+
+            // Gallery images
             const galleryFiles = document.getElementById('galleryImages').files;
             for (let i = 0; i < galleryFiles.length; i++) {
                 formData.append('gallery_images[]', galleryFiles[i]);
             }
+            formData.append('deleted_gallery_images', document.getElementById('deletedGalleryImages').value);
 
-            // Feature icons - upload each icon file
+            // Feature icons
             features.forEach((f) => {
                 if (f.iconFile) {
                     formData.append('feature_icons[]', f.iconFile);
@@ -684,10 +743,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Submit
-            fetch('ajax/add-tour-package.php', {
-                    method: 'POST',
-                    body: formData
-                })
+            fetch('ajax/edit-tour-package.php', {
+                method: 'POST',
+                body: formData
+            })
                 .then(response => response.json())
                 .then(data => {
                     submitBtn.disabled = false;
@@ -697,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.success) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'Created!',
+                            title: 'Updated!',
                             text: data.message,
                             timer: 2000,
                             showConfirmButton: false

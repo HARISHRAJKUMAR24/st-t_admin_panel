@@ -182,4 +182,89 @@ function deleteFolder($folderPath) {
     }
     return @rmdir($folderPath);
 }
-?>
+
+
+// =============================================
+// CURRENCY FUNCTIONS
+// =============================================
+
+/**
+ * Get currency symbol based on currency code
+ * @param string $currencyCode - Currency code (USD, EUR, INR, etc.)
+ * @return string - Currency symbol
+ */
+function getCurrencySymbol($currencyCode = 'USD') {
+    $symbols = [
+        'USD' => '$',
+        'EUR' => '€',
+        'GBP' => '£',
+        'INR' => '₹',
+        'AUD' => 'A$',
+        'CAD' => 'C$',
+        'JPY' => '¥',
+        'CNY' => '¥',
+        'KRW' => '₩',
+        'RUB' => '₽',
+        'BRL' => 'R$',
+        'ZAR' => 'R',
+        'AED' => 'د.إ',
+        'SAR' => '﷼',
+        'SGD' => 'S$',
+        'MYR' => 'RM',
+        'THB' => '฿',
+        'VND' => '₫',
+        'PHP' => '₱',
+        'IDR' => 'Rp',
+        'PKR' => '₨',
+        'BDT' => '৳',
+        'LKR' => 'Rs',
+        'NPR' => 'Rs',
+        'EGP' => 'E£',
+        'NGN' => '₦',
+        'KES' => 'KSh',
+        'TZS' => 'TSh',
+        'UGX' => 'USh',
+        'GHS' => 'GH₵',
+        'MXN' => '$',
+        'COP' => '$',
+        'ARS' => '$',
+        'CLP' => '$',
+        'PEN' => 'S/',
+        'BOB' => 'Bs',
+        'UYU' => '$U',
+        'PYG' => '₲',
+        'VES' => 'Bs.S',
+    ];
+    
+    return $symbols[$currencyCode] ?? '$';
+}
+
+/**
+ * Format price with currency symbol
+ * @param float $price - Price amount
+ * @param string $currencyCode - Currency code (USD, EUR, INR, etc.)
+ * @param bool $showDecimals - Show decimal places
+ * @return string - Formatted price with currency
+ */
+function formatPrice($price, $currencyCode = 'USD', $showDecimals = true) {
+    $symbol = getCurrencySymbol($currencyCode);
+    $decimals = $showDecimals ? 2 : 0;
+    $formatted = number_format($price, $decimals);
+    return $symbol . $formatted;
+}
+
+/**
+ * Get currency code from settings
+ * @param PDO $pdo - Database connection
+ * @return string - Currency code
+ */
+function getCurrencyCode($pdo) {
+    try {
+        $stmt = $pdo->prepare("SELECT currency FROM settings WHERE id = 1");
+        $stmt->execute();
+        $settings = $stmt->fetch();
+        return $settings['currency'] ?? 'USD';
+    } catch (Exception $e) {
+        return 'USD';
+    }
+}

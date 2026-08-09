@@ -9,19 +9,57 @@ if (!verifyToken($pdo)) {
     exit();
 }
 
+// Get package ID from URL (using package_id instead of id)
+$packageIdCode = isset($_GET['package_id']) ? trim($_GET['package_id']) : '';
+
+if (empty($packageIdCode)) {
+    header("Location: tour-packages.php");
+    exit();
+}
+
+// Fetch package data using package_id
+$stmt = $pdo->prepare("SELECT * FROM tour_packages WHERE package_id = ?");
+$stmt->execute([$packageIdCode]);
+$package = $stmt->fetch();
+
+if (!$package) {
+    header("Location: tour-packages.php");
+    exit();
+}
+
+// Get actual ID for internal use
+$id = $package['id'];
+
 $currentUser = getCurrentUser($pdo);
-$pageTitle = "Add Tour Package";
+$pageTitle = "Edit Tour Package";
 
 // Get settings for currency using the function
 $currencyCode = getCurrencyCode($pdo);
 $currencySymbol = getCurrencySymbol($currencyCode);
+
+// Decode JSON data
+$itinerary = json_decode($package['itinerary'], true) ?: [];
+$features = json_decode($package['features'], true) ?: [];
+$galleryImages = json_decode($package['gallery_images'], true) ?: [];
+
+// Extract members
+$members = [];
+if ($package['adults'] > 0) {
+    $members[] = ['label' => 'Adults', 'count' => $package['adults']];
+}
+if ($package['children'] > 0) {
+    $members[] = ['label' => 'Children', 'count' => $package['children']];
+}
+if ($package['infants'] > 0) {
+    $members[] = ['label' => 'Infants', 'count' => $package['infants']];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include_once 'includes/head_links.php'; ?>
-    <title>Add Tour Package · Tour Admin</title>
+    <title>Edit Tour Package · Tour Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* ============================================
@@ -235,7 +273,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
         }
 
         /* ============================================
-           IMAGE UPLOAD
+           IMAGE UPLOAD & PREVIEW
            ============================================ */
         .image-upload-wrapper {
             display: flex;
@@ -353,6 +391,63 @@ $currencySymbol = getCurrencySymbol($currencyCode);
             color: #9bb2c5;
             font-size: 0.8rem;
             padding: 0.5rem 0;
+        }
+
+        /* Current Image */
+        .current-image-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 0.8rem;
+        }
+
+        .current-image-item {
+            position: relative;
+            width: 100px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e8edf3;
+        }
+
+        .current-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .current-image-item .delete-image-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(231, 76, 94, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            opacity: 0;
+        }
+
+        .current-image-item:hover .delete-image-btn {
+            opacity: 1;
+        }
+
+        .current-image-item .delete-image-btn:hover {
+            transform: scale(1.1);
+            background: #dc3545;
+        }
+
+        .current-image-label {
+            font-size: 0.75rem;
+            color: #5f7d92;
+            margin-bottom: 0.3rem;
         }
 
         /* ============================================
@@ -698,6 +793,11 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                 width: 100%;
                 justify-content: center;
             }
+
+            .current-image-item {
+                width: 80px;
+                height: 70px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -738,19 +838,24 @@ $currencySymbol = getCurrencySymbol($currencyCode);
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
-                <small>Add Tour Package</small>
+                <small>Edit Tour Package</small>
             </div>
         </div>
 
         <div class="page-wrapper">
+           
 
             <div class="page-header">
-                <h4><i class="bi bi-plus-circle me-2" style="color:#f5b342;"></i>Add Tour Package</h4>
-                <p>Create a new tour package with all details, itinerary, and features</p>
+                <h4><i class="bi bi-pencil-square me-2" style="color:#f5b342;"></i>Edit Tour Package</h4>
+                <p>Update package details - <?= htmlspecialchars($package['package_id']) ?></p>
             </div>
 
             <div class="form-container">
                 <form id="tourPackageForm" enctype="multipart/form-data">
+                    <input type="hidden" id="packageId" value="<?= $package['id'] ?>">
+                    <input type="hidden" id="packageIdCode" value="<?= $package['package_id'] ?>">
+                    <input type="hidden" id="deletedGalleryImages" value="[]">
+                    <input type="hidden" id="deletedFeatures" value="[]">
 
                     <!-- ==========================================
                     BASIC INFORMATION
@@ -762,21 +867,21 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label">Package Name <span class="required">*</span></label>
-                            <input type="text" class="form-control" id="packageName" placeholder="Enter package name" required>
+                            <input type="text" class="form-control" id="packageName" value="<?= htmlspecialchars($package['package_name']) ?>" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Package Type</label>
                             <select class="form-select" id="packageType">
                                 <option value="">Select Type</option>
-                                <option value="Adventure">🏔️ Adventure</option>
-                                <option value="Beach">🏖️ Beach</option>
-                                <option value="Cultural">🏛️ Cultural</option>
-                                <option value="Wildlife">🦁 Wildlife</option>
-                                <option value="City Break">🏙️ City Break</option>
-                                <option value="Luxury">✨ Luxury</option>
-                                <option value="Family">👨‍👩‍👧‍👦 Family</option>
-                                <option value="Honeymoon">❤️ Honeymoon</option>
-                                <option value="Group">👥 Group</option>
+                                <option value="Adventure" <?= $package['package_type'] == 'Adventure' ? 'selected' : '' ?>>🏔️ Adventure</option>
+                                <option value="Beach" <?= $package['package_type'] == 'Beach' ? 'selected' : '' ?>>🏖️ Beach</option>
+                                <option value="Cultural" <?= $package['package_type'] == 'Cultural' ? 'selected' : '' ?>>🏛️ Cultural</option>
+                                <option value="Wildlife" <?= $package['package_type'] == 'Wildlife' ? 'selected' : '' ?>>🦁 Wildlife</option>
+                                <option value="City Break" <?= $package['package_type'] == 'City Break' ? 'selected' : '' ?>>🏙️ City Break</option>
+                                <option value="Luxury" <?= $package['package_type'] == 'Luxury' ? 'selected' : '' ?>>✨ Luxury</option>
+                                <option value="Family" <?= $package['package_type'] == 'Family' ? 'selected' : '' ?>>👨‍👩‍👧‍👦 Family</option>
+                                <option value="Honeymoon" <?= $package['package_type'] == 'Honeymoon' ? 'selected' : '' ?>>❤️ Honeymoon</option>
+                                <option value="Group" <?= $package['package_type'] == 'Group' ? 'selected' : '' ?>>👥 Group</option>
                             </select>
                         </div>
                     </div>
@@ -791,7 +896,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <label class="form-label">Days <span class="required">*</span></label>
-                            <input type="number" class="form-control" id="daysCount" value="1" min="1" required>
+                            <input type="number" class="form-control" id="daysCount" value="<?= $package['days_count'] ?>" min="1" required>
                         </div>
                         <div class="col-md-9">
                             <label class="form-label">Members <span class="text-muted">(Badge Style)</span></label>
@@ -804,7 +909,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                                     </button>
                                 </div>
                                 <div class="badges-container" id="membersList">
-                                    <div class="empty-badges">No members added yet</div>
+                                    <!-- Members will be rendered by JS -->
                                 </div>
                                 <input type="hidden" id="members" name="members" value="">
                                 <small class="text-muted" style="font-size:0.7rem;">Enter member type and count, then click Add</small>
@@ -813,7 +918,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                     </div>
 
                     <!-- ==========================================
-                    PRICE (Single Price Only)
+                    PRICE
                     ========================================== -->
                     <div class="section-title">
                         <i class="bi bi-tag" style="color:#f5b342;"></i> Pricing
@@ -826,7 +931,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                                 <span class="input-group-text" style="border-radius:10px 0 0 10px;border:2px solid #e8edf3;border-right:none;background:rgba(255,255,255,0.6);font-weight:600;">
                                     <?= htmlspecialchars($currencySymbol) ?>
                                 </span>
-                                <input type="number" class="form-control" id="price" placeholder="0.00" step="0.01" required style="border-radius:0 10px 10px 0;">
+                                <input type="number" class="form-control" id="price" value="<?= $package['price'] ?>" step="0.01" required style="border-radius:0 10px 10px 0;">
                             </div>
                         </div>
                     </div>
@@ -838,9 +943,9 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                         <div class="col-md-6">
                             <label class="form-label">Status</label>
                             <select class="form-select" id="status">
-                                <option value="active">✅ Active</option>
-                                <option value="inactive">❌ Inactive</option>
-                                <option value="upcoming">⏳ Upcoming</option>
+                                <option value="active" <?= $package['status'] == 'active' ? 'selected' : '' ?>>✅ Active</option>
+                                <option value="inactive" <?= $package['status'] == 'inactive' ? 'selected' : '' ?>>❌ Inactive</option>
+                                <option value="upcoming" <?= $package['status'] == 'upcoming' ? 'selected' : '' ?>>⏳ Upcoming</option>
                             </select>
                         </div>
                     </div>
@@ -854,24 +959,45 @@ $currencySymbol = getCurrencySymbol($currencyCode);
 
                     <div class="mb-3">
                         <label class="form-label">Short Description <span class="required">*</span></label>
-                        <textarea class="form-control" id="shortDescription" rows="2" placeholder="Brief description of the package (1-2 sentences)" required></textarea>
+                        <textarea class="form-control" id="shortDescription" rows="2" required><?= htmlspecialchars($package['short_description']) ?></textarea>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label">Full Description</label>
-                        <textarea class="form-control" id="description" rows="4" placeholder="Detailed description of the package"></textarea>
+                        <textarea class="form-control" id="description" rows="4"><?= htmlspecialchars($package['description']) ?></textarea>
                     </div>
 
                     <!-- ==========================================
-                    ITINERARY (with Day Title & Description)
+                    ITINERARY
                     ========================================== -->
                     <div class="section-title">
                         <i class="bi bi-calendar-event" style="color:#f5b342;"></i> Itinerary
-                        <span class="badge-count" id="dayCount">1 Day</span>
+                        <span class="badge-count" id="dayCount"><?= count($itinerary) ?> Day<?= count($itinerary) > 1 ? 's' : '' ?></span>
                     </div>
 
                     <div id="itineraryContainer" class="mb-3">
-                        <!-- Days will be added by JavaScript -->
+                        <?php foreach ($itinerary as $day => $data): ?>
+                            <?php
+                            $dayNumber = str_replace('day', '', $day);
+                            $title = $data['title'] ?? '';
+                            $description = $data['description'] ?? '';
+                            ?>
+                            <div class="itinerary-day" id="day-<?= $dayNumber ?>">
+                                <div class="day-header">
+                                    <span class="day-label">
+                                        <span class="day-number"><?= $dayNumber ?></span>
+                                        Day <?= $dayNumber ?>
+                                    </span>
+                                    <button type="button" class="remove-day" onclick="removeDay('day-<?= $dayNumber ?>')">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="day-title-input">
+                                    <input type="text" class="form-control" id="day_title_<?= $dayNumber ?>" value="<?= htmlspecialchars($title) ?>" placeholder="Enter day title (e.g., Arrival & Welcome)" style="font-weight:600;color:#123b4f;">
+                                </div>
+                                <textarea class="form-control" id="itinerary_<?= $dayNumber ?>" rows="2" placeholder="Enter description for Day <?= $dayNumber ?>"><?= htmlspecialchars($description) ?></textarea>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
 
                     <button type="button" class="btn-add-day" onclick="addDay()">
@@ -879,11 +1005,11 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                     </button>
 
                     <!-- ==========================================
-                    FEATURES (with Icon Upload - FIXED)
+                    FEATURES
                     ========================================== -->
                     <div class="section-title mt-4">
                         <i class="bi bi-star" style="color:#f5b342;"></i> Features
-                        <span class="badge-count" id="featureCount">0 Features</span>
+                        <span class="badge-count" id="featureCount"><?= count($features) ?> Feature<?= count($features) > 1 ? 's' : '' ?></span>
                     </div>
 
                     <div class="mb-4">
@@ -891,7 +1017,6 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                             <div class="badge-input-row">
                                 <input type="text" class="form-control" id="featureInput" placeholder="Enter feature name" style="flex:1;">
 
-                                <!-- Feature Icon Upload - Using LABEL for better click handling -->
                                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                                     <label for="featureIcon" class="feature-icon-upload-box" id="featureIconBox">
                                         <i class="bi bi-image" style="font-size:1rem;color:#9bb2c5;"></i>
@@ -904,7 +1029,6 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                                 </div>
                             </div>
 
-                            <!-- Feature Icon Preview -->
                             <div id="featureIconPreview" class="mt-2" style="display:none;">
                                 <span style="background:rgba(40,167,69,0.1);color:#28a745;padding:0.2rem 0.8rem;border-radius:12px;font-size:0.75rem;display:inline-flex;align-items:center;gap:6px;">
                                     <img id="featureIconPreviewImg" src="" style="width:18px;height:18px;object-fit:contain;border-radius:4px;">
@@ -913,9 +1037,20 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                                 </span>
                             </div>
 
-                            <!-- Features Container -->
                             <div class="badges-container" id="featuresContainer">
-                                <div class="empty-badges">No features added yet</div>
+                                <?php if (empty($features)): ?>
+                                    <div class="empty-badges">No features added yet</div>
+                                <?php else: ?>
+                                    <?php foreach ($features as $index => $feature): ?>
+                                        <span class="badge-item" data-feature-index="<?= $index ?>">
+                                            <?php if (!empty($feature['icon'])): ?>
+                                                <img src="<?= APP_URL . $feature['icon'] ?>" class="badge-icon" alt="icon">
+                                            <?php endif; ?>
+                                            <span class="badge-name"><?= htmlspecialchars($feature['name']) ?></span>
+                                            <span class="remove-badge" onclick="removeFeature(<?= $index ?>)">&times;</span>
+                                        </span>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <small class="text-muted" style="font-size:0.7rem;">Add features with optional icons (JPG, PNG, WebP up to 1MB)</small>
@@ -930,16 +1065,30 @@ $currencySymbol = getCurrencySymbol($currencyCode);
 
                     <!-- Main Image -->
                     <div class="mb-4">
-                        <label class="form-label">Main Image <span class="required">*</span></label>
+                        <label class="form-label">Main Image</label>
+                        <?php if (!empty($package['main_image'])): ?>
+                            <div class="mb-2">
+                                <div class="current-image-label">Current Image:</div>
+                                <div class="current-image-wrapper">
+                                    <div class="current-image-item">
+                                        <img src="<?= APP_URL . $package['main_image'] ?>" alt="Current main image">
+                                        <button type="button" class="delete-image-btn" onclick="deleteMainImage()">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <input type="hidden" id="deleteMainImage" value="0">
                         <div class="image-upload-wrapper">
                             <div class="image-upload-box" id="mainImageBox">
                                 <i class="bi bi-cloud-upload"></i>
-                                <p>Upload Main Image<br><small>JPG, PNG, WebP</small></p>
+                                <p>Change Image<br><small>JPG, PNG, WebP</small></p>
                                 <input type="file" id="mainImage" name="main_image" accept="image/*" style="display:none;">
                             </div>
                             <div class="image-preview-wrapper">
                                 <div id="mainImagePreview" class="image-preview">
-                                    <div class="image-preview-empty">No image selected</div>
+                                    <div class="image-preview-empty">No new image selected</div>
                                 </div>
                             </div>
                         </div>
@@ -948,15 +1097,31 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                     <!-- Gallery Images -->
                     <div class="mb-4">
                         <label class="form-label">Gallery Images</label>
+                        <?php if (!empty($galleryImages)): ?>
+                            <div class="mb-2">
+                                <div class="current-image-label">Current Images:</div>
+                                <div class="current-image-wrapper" id="currentGalleryImages">
+                                    <?php foreach ($galleryImages as $index => $img): ?>
+                                        <div class="current-image-item" data-gallery-index="<?= $index ?>">
+                                            <img src="<?= APP_URL . $img ?>" alt="Gallery image">
+                                            <button type="button" class="delete-image-btn" onclick="deleteGalleryImage(<?= $index ?>, '<?= $img ?>')">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <input type="hidden" id="deletedGalleryImages" value="[]">
                         <div class="image-upload-wrapper">
                             <div class="image-upload-box" id="galleryImagesBox">
                                 <i class="bi bi-images"></i>
-                                <p>Upload Gallery<br><small>Multiple images</small></p>
+                                <p>Add Images<br><small>Multiple images</small></p>
                                 <input type="file" id="galleryImages" name="gallery_images[]" accept="image/*" multiple style="display:none;">
                             </div>
                             <div class="image-preview-wrapper">
                                 <div id="galleryImagesPreview" class="image-preview">
-                                    <div class="image-preview-empty">No images selected</div>
+                                    <div class="image-preview-empty">No new images selected</div>
                                 </div>
                             </div>
                         </div>
@@ -970,7 +1135,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                             <i class="bi bi-x-circle me-1"></i> Cancel
                         </button>
                         <button type="submit" class="btn-submit" id="submitBtn">
-                            <span id="submitText"><i class="bi bi-check2 me-2"></i>Create Package</span>
+                            <span id="submitText"><i class="bi bi-check2 me-2"></i>Update Package</span>
                             <span id="submitSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
                         </button>
                     </div>
@@ -983,7 +1148,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
     </script>
     <script src="<?= APP_URL ?>javascript/main.js"></script>
-    <script src="<?= APP_URL ?>javascript/add-tour-package.js"></script>
+    <script src="<?= APP_URL ?>javascript/edit-tour-package.js"></script>
 </body>
 
 </html>
