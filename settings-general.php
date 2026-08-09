@@ -19,7 +19,7 @@ $stmt->execute();
 $settings = $stmt->fetch();
 
 if (!$settings) {
-    $stmt = $pdo->prepare("INSERT INTO settings (id, timezone, address) VALUES (1, 'Asia/Kolkata', '')");
+    $stmt = $pdo->prepare("INSERT INTO settings (id, timezone, address, currency) VALUES (1, 'Asia/Kolkata', '', 'USD')");
     $stmt->execute();
     $settings = [
         'id' => 1,
@@ -31,7 +31,7 @@ if (!$settings) {
         'site_name' => 'Tour Admin',
         'contact_email' => '',
         'contact_phone' => '',
-        'currency' => 'INR',
+        'currency' => 'USD',
         'site_title' => 'Tour Admin Panel'
     ];
 }
@@ -51,6 +51,22 @@ $timezones = [
     'Europe/Paris' => 'Europe/Paris (CET)',
     'Australia/Sydney' => 'Australia/Sydney (AEST)',
     'Pacific/Auckland' => 'Pacific/Auckland (NZST)',
+];
+
+// Currency list
+$currencies = [
+    'USD' => 'USD ($)',
+    'INR' => 'INR (₹)',
+    'EUR' => 'EUR (€)',
+    'GBP' => 'GBP (£)',
+    'AED' => 'AED (د.إ)',
+    'SGD' => 'SGD (S$)',
+    'JPY' => 'JPY (¥)',
+    'AUD' => 'AUD (A$)',
+    'CAD' => 'CAD (C$)',
+    'CHF' => 'CHF (Fr)',
+    'CNY' => 'CNY (¥)',
+    'NZD' => 'NZD (NZ$)',
 ];
 ?>
 <!DOCTYPE html>
@@ -461,7 +477,6 @@ $timezones = [
 
             <div class="settings-header">
                 <h4><i class="bi bi-gear me-2" style="color:#f5b342;"></i>General Settings</h4>
-             
             </div>
 
             <div class="settings-container">
@@ -488,6 +503,18 @@ $timezones = [
                             <div class="mb-3">
                                 <label class="form-label">Address</label>
                                 <textarea class="form-control" id="settingsAddress" rows="2" placeholder="Enter your address"><?= htmlspecialchars($settings['address'] ?? '') ?></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                <select class="form-select" id="currency" name="currency" required>
+                                    <?php foreach ($currencies as $value => $label): ?>
+                                        <option value="<?= $value ?>" <?= ($settings['currency'] == $value) ? 'selected' : '' ?>>
+                                            <?= $label ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="text-muted">Default currency for all transactions</small>
                             </div>
 
                             <div class="mb-3">

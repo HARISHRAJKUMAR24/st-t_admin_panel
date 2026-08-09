@@ -26,7 +26,7 @@
                     Car Rental
                 </a>
             </li>
-            <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-suitcase-fill"></i> Tours</a></li>
+            <li class="nav-item"><a class="nav-link" href="tour-packages"><i class="bi bi-suitcase-fill"></i> Tours</a></li>
             <!-- Offers -->
             <li class="nav-item">
                 <a class="nav-link" href="offers">

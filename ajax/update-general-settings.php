@@ -3,9 +3,9 @@
 // UPDATE GENERAL SETTINGS - AJAX HANDLER
 // =============================================
 
-// Enable error reporting for debugging (remove in production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Disable error display
+error_reporting(0);
+ini_set('display_errors', 0);
 
 // Set JSON header
 header('Content-Type: application/json');
@@ -41,7 +41,11 @@ try {
     $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $timezone = trim($_POST['timezone'] ?? 'Asia/Kolkata');
+    $currency = trim($_POST['currency'] ?? 'USD');
     $userId = $_SESSION['user_id'];
+
+    // Debug log
+    error_log("Currency received: " . $currency);
 
     // Validate
     if (empty($name) || empty($email)) {
@@ -56,6 +60,14 @@ try {
         echo json_encode([
             'success' => false, 
             'message' => 'Timezone is required'
+        ]);
+        exit();
+    }
+
+    if (empty($currency)) {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Currency is required'
         ]);
         exit();
     }
@@ -87,24 +99,13 @@ try {
     $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?");
     $stmt->execute([$name, $email, $phone, $userId]);
 
-    // Update settings (timezone and address)
+    // Check if settings table exists
+    $tableExists = false;
     try {
-        // Check if address column exists
-        $stmt = $pdo->prepare("SHOW COLUMNS FROM settings LIKE 'address'");
-        $stmt->execute();
-        $columnExists = $stmt->fetch();
-        
-        if ($columnExists) {
-            // Update with address
-            $stmt = $pdo->prepare("UPDATE settings SET timezone = ?, address = ? WHERE id = 1");
-            $stmt->execute([$timezone, $address]);
-        } else {
-            // Update without address
-            $stmt = $pdo->prepare("UPDATE settings SET timezone = ? WHERE id = 1");
-            $stmt->execute([$timezone]);
-        }
+        $stmt = $pdo->query("SELECT 1 FROM settings LIMIT 1");
+        $tableExists = true;
     } catch (PDOException $e) {
-        // If settings table doesn't exist, create it
+        // Table doesn't exist, create it
         $pdo->exec("CREATE TABLE IF NOT EXISTS settings (
             id INT(11) NOT NULL DEFAULT 1,
             site_name VARCHAR(255) DEFAULT 'Tour Admin',
@@ -122,10 +123,60 @@ try {
             panel_logo VARCHAR(255) DEFAULT NULL,
             PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+    }
+
+    // Check if currency column exists
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM settings LIKE 'currency'");
+        $columnExists = $stmt->fetch();
         
-        // Insert default record
-        $stmt = $pdo->prepare("INSERT INTO settings (id, timezone, address) VALUES (1, ?, ?) ON DUPLICATE KEY UPDATE timezone = ?, address = ?");
-        $stmt->execute([$timezone, $address, $timezone, $address]);
+        if (!$columnExists) {
+            // Add currency column if it doesn't exist
+            $pdo->exec("ALTER TABLE settings ADD COLUMN currency VARCHAR(10) DEFAULT 'USD'");
+            error_log("Currency column added");
+        }
+    } catch (PDOException $e) {
+        error_log("Error checking/adding currency column: " . $e->getMessage());
+    }
+
+    // Check if address column exists
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM settings LIKE 'address'");
+        $columnExists = $stmt->fetch();
+        
+        if (!$columnExists) {
+            $pdo->exec("ALTER TABLE settings ADD COLUMN address TEXT DEFAULT NULL");
+        }
+    } catch (PDOException $e) {
+        error_log("Error checking/adding address column: " . $e->getMessage());
+    }
+
+    // Update settings - explicitly set currency
+    try {
+        // First check if record exists
+        $stmt = $pdo->prepare("SELECT id FROM settings WHERE id = 1");
+        $stmt->execute();
+        $exists = $stmt->fetch();
+
+        if ($exists) {
+            // Update existing record
+            $stmt = $pdo->prepare("UPDATE settings SET 
+                timezone = ?, 
+                address = ?, 
+                currency = ? 
+                WHERE id = 1");
+            $stmt->execute([$timezone, $address, $currency]);
+            error_log("Settings updated - Currency: " . $currency);
+        } else {
+            // Insert new record
+            $stmt = $pdo->prepare("INSERT INTO settings (id, timezone, address, currency) 
+                VALUES (1, ?, ?, ?)");
+            $stmt->execute([$timezone, $address, $currency]);
+            error_log("Settings inserted - Currency: " . $currency);
+        }
+    } catch (PDOException $e) {
+        error_log("Error updating settings: " . $e->getMessage());
+        throw new Exception('Failed to update settings: ' . $e->getMessage());
     }
 
     // Update session timezone
@@ -139,10 +190,14 @@ try {
         'panel_logo' => ['field' => 'panel_logo', 'folder' => 'panel-logo']
     ];
 
-    // Get existing settings
-    $stmt = $pdo->prepare("SELECT * FROM settings WHERE id = 1");
-    $stmt->execute();
-    $settings = $stmt->fetch();
+    // Get existing settings for logo paths
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM settings WHERE id = 1");
+        $stmt->execute();
+        $settings = $stmt->fetch();
+    } catch (PDOException $e) {
+        $settings = ['id' => 1, 'website_logo' => null, 'favicon' => null, 'panel_logo' => null];
+    }
 
     if (!$settings) {
         $settings = ['id' => 1, 'website_logo' => null, 'favicon' => null, 'panel_logo' => null];
@@ -203,14 +258,28 @@ try {
             $stmt->execute([$value]);
         } catch (PDOException $e) {
             // If column doesn't exist, add it
-            $pdo->exec("ALTER TABLE settings ADD COLUMN $key VARCHAR(255) DEFAULT NULL");
-            $stmt = $pdo->prepare("UPDATE settings SET $key = ? WHERE id = 1");
-            $stmt->execute([$value]);
+            try {
+                $pdo->exec("ALTER TABLE settings ADD COLUMN $key VARCHAR(255) DEFAULT NULL");
+                $stmt = $pdo->prepare("UPDATE settings SET $key = ? WHERE id = 1");
+                $stmt->execute([$value]);
+            } catch (PDOException $e2) {
+                error_log("Error adding column $key: " . $e2->getMessage());
+            }
         }
     }
 
     // Commit transaction
     $pdo->commit();
+
+    // Verify currency was saved
+    try {
+        $stmt = $pdo->prepare("SELECT currency FROM settings WHERE id = 1");
+        $stmt->execute();
+        $savedCurrency = $stmt->fetch();
+        error_log("Currency saved in database: " . ($savedCurrency ? $savedCurrency['currency'] : 'NULL'));
+    } catch (PDOException $e) {
+        error_log("Error verifying currency: " . $e->getMessage());
+    }
 
     echo json_encode([
         'success' => true,

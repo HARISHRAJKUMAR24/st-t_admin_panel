@@ -136,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = document.getElementById('settingsName').value.trim();
             const email = document.getElementById('settingsEmail').value.trim();
             const timezone = document.getElementById('timezone').value;
+            const currency = document.getElementById('currency').value;
             const address = document.getElementById('settingsAddress').value.trim();
 
             if (!name || !email) {
@@ -158,6 +159,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            if (!currency) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please select a currency'
+                });
+                document.getElementById('currency').focus();
+                return;
+            }
+
             // Show loading state
             const submitBtn = document.getElementById('submitBtn');
             const submitText = document.getElementById('submitText');
@@ -173,6 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('phone', document.getElementById('settingsPhone').value.trim());
             formData.append('address', address);
             formData.append('timezone', timezone);
+            formData.append('currency', currency);
 
             // AJAX request
             fetch('ajax/update-general-settings.php', {
