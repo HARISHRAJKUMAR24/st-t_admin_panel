@@ -26,7 +26,7 @@ try {
     $carName = isset($_POST['car_name']) ? trim($_POST['car_name']) : '';
     $carModel = isset($_POST['car_model']) ? trim($_POST['car_model']) : '';
     $carBrand = isset($_POST['car_brand']) ? trim($_POST['car_brand']) : '';
-    $carType = isset($_POST['car_type']) ? trim($_POST['car_type']) : '';
+    $carTypesJson = isset($_POST['car_types']) ? $_POST['car_types'] : '[]';
     $perDayAmount = isset($_POST['per_day_amount']) ? floatval($_POST['per_day_amount']) : 0;
     $perKmCharge = isset($_POST['per_km_charge']) ? floatval($_POST['per_km_charge']) : 0;
     $fuelType = isset($_POST['fuel_type']) ? trim($_POST['fuel_type']) : '';
@@ -36,8 +36,14 @@ try {
     $status = isset($_POST['status']) ? trim($_POST['status']) : 'available';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
 
+    // Decode car types
+    $carTypes = json_decode($carTypesJson, true);
+    if (!is_array($carTypes)) {
+        $carTypes = [];
+    }
+
     // Validate required fields
-    if (empty($carName) || $perDayAmount <= 0 || $perKmCharge <= 0) {
+    if (empty($carName) || empty($carTypes) || $perDayAmount <= 0 || $perKmCharge <= 0) {
         echo json_encode([
             'success' => false,
             'message' => 'Please fill in all required fields'
@@ -95,6 +101,9 @@ try {
         }
     }
 
+    // Convert car types to JSON string for storage
+    $carTypesJsonString = json_encode($carTypes);
+
     // Insert into database
     $stmt = $pdo->prepare("INSERT INTO car_rentals 
         (car_name, car_model, car_brand, car_type, car_image, additional_images, 
@@ -108,7 +117,7 @@ try {
         $carName,
         $carModel,
         $carBrand,
-        $carType,
+        $carTypesJsonString, // Store as JSON
         $mainImagePath,
         $additionalImagesJson,
         $perDayAmount,

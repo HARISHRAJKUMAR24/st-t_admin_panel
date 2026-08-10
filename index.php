@@ -24,8 +24,7 @@ include_once 'config/config.php';
                 <i class="bi bi-list"></i>
             </button>
             <div class="greeting-center">
-                Welcome back, <strong>Adrian</strong>
-                <small>Tour manager · 5 new updates</small>
+                Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
             </div>
         </div>
 

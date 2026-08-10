@@ -1,688 +1,372 @@
 // =============================================
-// EDIT TOUR PACKAGE - JAVASCRIPT
+// EDIT CAR RENTAL - AJAX HANDLER
 // =============================================
 
-let features = [];
-let members = [];
-let featureIconFile = null;
-let featureIconPreviewData = null;
-let deletedGalleryImages = [];
+let carTypes = [];
+let deletedImages = [];
 let mainImageDeleted = false;
 
-// =============================================
-// INITIALIZE
-// =============================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Edit Car Rental JS loaded successfully!');
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Load existing features from HTML
-    loadExistingFeatures();
-
-    // Load existing members from HTML
-    loadExistingMembers();
-
-    // Setup image uploads
-    setupImageUpload('mainImage', 'mainImagePreview', 'mainImageBox', true);
-    setupGalleryUpload('galleryImages', 'galleryImagesPreview', 'galleryImagesBox');
-    setupFeatureIconUpload();
-
-    // Update counts
-    updateDayCount();
-    updateFeatureCount();
-
-    // Setup delete handlers
-    setupDeleteHandlers();
-});
-
-// =============================================
-// LOAD EXISTING FEATURES
-// =============================================
-
-function loadExistingFeatures() {
-    const container = document.getElementById('featuresContainer');
-    const items = container.querySelectorAll('.badge-item');
-
-    items.forEach((item) => {
-        const nameSpan = item.querySelector('.badge-name');
-        const iconImg = item.querySelector('.badge-icon');
-        const name = nameSpan ? nameSpan.textContent : '';
-        const icon = iconImg ? iconImg.getAttribute('src') : null;
-
-        features.push({
-            name: name,
-            icon: icon,
-            iconFile: null,
-            iconPreview: null
-        });
-    });
-
-    // Clear HTML features (will be re-rendered by JS)
-    container.innerHTML = '';
-    renderFeatures();
-}
-
-// =============================================
-// LOAD EXISTING MEMBERS
-// =============================================
-
-function loadExistingMembers() {
-    const container = document.getElementById('membersList');
-    const items = container.querySelectorAll('.member-badge');
-
-    items.forEach((item) => {
-        const labelSpan = item.querySelector('.member-label');
-        const countSpan = item.querySelector('.member-count');
-        const label = labelSpan ? labelSpan.textContent : '';
-        const count = countSpan ? parseInt(countSpan.textContent) : 0;
-
-        if (label) {
-            members.push({ label: label, count: count });
+    // =============================================
+    // CAR TYPES - Load existing types
+    // =============================================
+    
+    // Load existing car types from hidden input
+    const carTypesHidden = document.getElementById('carTypesHidden');
+    if (carTypesHidden && carTypesHidden.value) {
+        try {
+            const existingTypes = JSON.parse(carTypesHidden.value);
+            if (Array.isArray(existingTypes) && existingTypes.length > 0) {
+                carTypes = existingTypes;
+                renderCarTypes();
+            }
+        } catch (e) {
+            console.error('Error parsing car types:', e);
         }
-    });
-
-    // Clear HTML members (will be re-rendered by JS)
-    container.innerHTML = '';
-    renderMembers();
-}
-
-// =============================================
-// MEMBERS (Badge Style)
-// =============================================
-
-function addMember(label = '', count = 0) {
-    const labelInput = document.getElementById('memberLabel');
-    const countInput = document.getElementById('memberCount');
-
-    let memberLabel = label || labelInput.value.trim();
-    let memberCount = count || parseInt(countInput.value) || 0;
-
-    if (!memberLabel) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Member Type Required',
-            text: 'Please enter a member type (e.g., Adults, Children)',
-            confirmButtonColor: '#123b4f'
-        });
-        labelInput.focus();
-        return;
     }
 
-    const existing = members.find(m => m.label.toLowerCase() === memberLabel.toLowerCase());
-    if (existing) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Duplicate Member Type',
-            text: `"${memberLabel}" already exists.`,
-            confirmButtonColor: '#123b4f'
-        });
-        return;
-    }
+    // =============================================
+    // CAR TYPES - Badge Style (Input field)
+    // =============================================
 
-    members.push({
-        label: memberLabel,
-        count: memberCount
-    });
+    const addCarTypeBtn = document.getElementById('addCarTypeBtn');
+    const carTypeInput = document.getElementById('carTypeInput');
 
-    renderMembers();
-    labelInput.value = '';
-    countInput.value = '0';
-    labelInput.focus();
-}
-
-function removeMember(index) {
-    members.splice(index, 1);
-    renderMembers();
-}
-
-function renderMembers() {
-    const container = document.getElementById('membersList');
-    container.innerHTML = '';
-
-    if (members.length === 0) {
-        container.innerHTML = '<div class="empty-badges">No members added yet</div>';
-        return;
-    }
-
-    members.forEach((member, index) => {
-        const badge = document.createElement('span');
-        badge.className = 'member-badge';
-        badge.innerHTML = `
-            <span class="member-label">${escapeHtml(member.label)}</span>
-            <span class="member-count">${member.count}</span>
-            <span class="remove-badge" onclick="removeMember(${index})">&times;</span>
-        `;
-        container.appendChild(badge);
-    });
-
-    document.getElementById('members').value = JSON.stringify(members);
-}
-
-// =============================================
-// IMAGE UPLOAD
-// =============================================
-
-function setupImageUpload(inputId, previewId, boxId, isSingle) {
-    const input = document.getElementById(inputId);
-    const box = document.getElementById(boxId);
-    const preview = document.getElementById(previewId);
-
-    if (box) {
-        box.addEventListener('click', function () {
-            input.click();
+    // Add car type on button click
+    if (addCarTypeBtn) {
+        addCarTypeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addCarType();
         });
     }
 
-    if (input) {
-        input.addEventListener('change', function (e) {
-            const files = e.target.files;
-            preview.innerHTML = '';
-
-            if (files.length > 0) {
-                const file = files[0];
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const div = document.createElement('div');
-                    div.className = 'image-preview-item';
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.alt = file.name;
-                    div.appendChild(img);
-
-                    if (!isSingle) {
-                        const removeBtn = document.createElement('button');
-                        removeBtn.className = 'remove-image';
-                        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                        removeBtn.onclick = function (e) {
-                            e.stopPropagation();
-                            div.remove();
-                            const dt = new DataTransfer();
-                            for (let f of input.files) {
-                                if (f.name !== file.name) {
-                                    dt.items.add(f);
-                                }
-                            }
-                            input.files = dt.files;
-                            if (preview.children.length === 0) {
-                                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
-                            }
-                        };
-                        div.appendChild(removeBtn);
-                    }
-                    preview.appendChild(div);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
+    // Add car type on Enter key
+    if (carTypeInput) {
+        carTypeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCarType();
             }
         });
     }
-}
 
-function setupGalleryUpload(inputId, previewId, boxId) {
-    const input = document.getElementById(inputId);
-    const box = document.getElementById(boxId);
-    const preview = document.getElementById(previewId);
+    function addCarType() {
+        const input = document.getElementById('carTypeInput');
+        const type = input.value.trim();
 
-    if (box) {
-        box.addEventListener('click', function () {
-            input.click();
+        if (!type) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Car Type Required',
+                text: 'Please enter a car type',
+                confirmButtonColor: '#0b2a3e'
+            });
+            input.focus();
+            return;
+        }
+
+        // Check if car type already exists
+        const existing = carTypes.find(c => c.toLowerCase() === type.toLowerCase());
+        if (existing) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Duplicate Car Type',
+                text: `"${type}" already exists. Please enter a different type.`,
+                confirmButtonColor: '#0b2a3e'
+            });
+            input.value = '';
+            input.focus();
+            return;
+        }
+
+        carTypes.push(type);
+        renderCarTypes();
+
+        // Clear input and focus
+        input.value = '';
+        input.focus();
+    }
+
+    window.addCarType = addCarType;
+
+    window.removeCarType = function(index) {
+        carTypes.splice(index, 1);
+        renderCarTypes();
+    }
+
+    function renderCarTypes() {
+        const container = document.getElementById('carTypesList');
+        container.innerHTML = '';
+
+        if (carTypes.length === 0) {
+            container.innerHTML = '<div class="empty-badges">No car types added</div>';
+            return;
+        }
+
+        carTypes.forEach((type, index) => {
+            const badge = document.createElement('span');
+            badge.className = 'badge-item';
+            badge.innerHTML = `
+                <span class="badge-name">${escapeHtml(type)}</span>
+                <span class="remove-badge" onclick="removeCarType(${index})">&times;</span>
+            `;
+            container.appendChild(badge);
+        });
+
+        // Update hidden input
+        document.getElementById('carTypes').value = JSON.stringify(carTypes);
+    }
+
+    // =============================================
+    // IMAGE UPLOAD HANDLING
+    // =============================================
+
+    // Main Image Upload
+    const mainImageBox = document.getElementById('mainImageBox');
+    const mainImageInput = document.getElementById('mainImage');
+    const mainImagePreview = document.getElementById('mainImagePreview');
+
+    if (mainImageBox) {
+        mainImageBox.addEventListener('click', function() {
+            mainImageInput.click();
         });
     }
 
-    if (input) {
-        input.addEventListener('change', function (e) {
-            const files = e.target.files;
-            preview.innerHTML = '';
+    if (mainImageInput) {
+        mainImageInput.addEventListener('change', function(e) {
+            handleImageUpload(e, 'mainImagePreview', true);
+        });
+    }
 
+    // Additional Images Upload
+    const additionalImagesBox = document.getElementById('additionalImagesBox');
+    const additionalImagesInput = document.getElementById('additionalImages');
+    const additionalImagesPreview = document.getElementById('additionalImagesPreview');
+
+    if (additionalImagesBox) {
+        additionalImagesBox.addEventListener('click', function() {
+            additionalImagesInput.click();
+        });
+    }
+
+    if (additionalImagesInput) {
+        additionalImagesInput.addEventListener('change', function(e) {
+            handleImageUpload(e, 'additionalImagesPreview', false);
+        });
+    }
+
+    function handleImageUpload(event, previewId, isSingle) {
+        const files = event.target.files;
+        const previewContainer = document.getElementById(previewId);
+        previewContainer.innerHTML = '';
+
+        if (isSingle) {
+            const file = files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = createImagePreviewItem(e.target.result, file.name, isSingle);
+                    previewContainer.appendChild(div);
+                    // Hide empty message
+                    previewContainer.querySelector('.image-preview-empty')?.remove();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
+            }
+        } else {
             if (files.length === 0) {
-                preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
+                previewContainer.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
                 return;
             }
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const reader = new FileReader();
-                reader.onload = function (e) {
-                    const div = document.createElement('div');
-                    div.className = 'image-preview-item';
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.alt = file.name;
-                    div.appendChild(img);
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-image';
-                    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                    removeBtn.onclick = function (e) {
-                        e.stopPropagation();
-                        div.remove();
-                        const dt = new DataTransfer();
-                        for (let f of input.files) {
-                            if (f.name !== file.name) {
-                                dt.items.add(f);
-                            }
-                        }
-                        input.files = dt.files;
-                        if (preview.children.length === 0) {
-                            preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
-                        }
-                    };
-                    div.appendChild(removeBtn);
-                    preview.appendChild(div);
+                reader.onload = function(e) {
+                    const div = createImagePreviewItem(e.target.result, file.name, isSingle);
+                    previewContainer.appendChild(div);
+                    previewContainer.querySelector('.image-preview-empty')?.remove();
                 };
                 reader.readAsDataURL(file);
             }
-        });
-    }
-}
-
-// =============================================
-// DELETE IMAGE FUNCTIONS
-// =============================================
-
-function deleteMainImage() {
-    const imgWrapper = document.querySelector('.current-image-item');
-    if (imgWrapper) {
-        imgWrapper.remove();
-    }
-    mainImageDeleted = true;
-    document.getElementById('deleteMainImage').value = '1';
-}
-
-function deleteGalleryImage(index, imagePath) {
-    const imgItem = document.querySelector(`.current-image-item[data-gallery-index="${index}"]`);
-    if (imgItem) {
-        imgItem.remove();
+        }
     }
 
-    deletedGalleryImages.push(imagePath);
-    document.getElementById('deletedGalleryImages').value = JSON.stringify(deletedGalleryImages);
-}
+    function createImagePreviewItem(src, fileName, isSingle) {
+        const div = document.createElement('div');
+        div.className = 'image-preview-item';
 
-function setupDeleteHandlers() {
-    // Setup delete gallery image handlers for existing images
-    document.querySelectorAll('.current-image-item[data-gallery-index]').forEach(item => {
-        const btn = item.querySelector('.delete-image-btn');
-        if (btn) {
-            btn.onclick = function () {
-                const index = parseInt(item.dataset.galleryIndex);
-                const img = item.querySelector('img');
-                if (img) {
-                    const src = img.getAttribute('src');
-                    const path = src.replace('<?= APP_URL ?>', '');
-                    deleteGalleryImage(index, path);
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = fileName;
+        div.appendChild(img);
+
+        if (!isSingle) {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-image';
+            removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+            removeBtn.onclick = function(e) {
+                e.stopPropagation();
+                div.remove();
+                const parent = div.parentElement;
+                if (parent && parent.children.length === 0) {
+                    parent.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
                 }
             };
+            div.appendChild(removeBtn);
         }
-    });
-}
 
-// =============================================
-// FEATURE ICON UPLOAD
-// =============================================
+        return div;
+    }
 
-function setupFeatureIconUpload() {
-    const input = document.getElementById('featureIcon');
-    const box = document.getElementById('featureIconBox');
+    // =============================================
+    // DELETE IMAGE FUNCTIONS
+    // =============================================
 
-    if (input) {
-        input.addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 1 * 1024 * 1024) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'File Too Large',
-                        text: 'Icon file must be less than 1MB',
-                        confirmButtonColor: '#123b4f'
-                    });
-                    this.value = '';
-                    return;
+    window.deleteMainImage = function() {
+        Swal.fire({
+            title: 'Delete Main Image?',
+            text: "This will remove the main image. You can upload a new one.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const imgWrapper = document.querySelector('.current-image-item');
+                if (imgWrapper) {
+                    imgWrapper.remove();
                 }
-
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon'];
-                if (!allowedTypes.includes(file.type)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid File Type',
-                        text: 'Please upload JPG, PNG, GIF, WebP, SVG, or ICO files only',
-                        confirmButtonColor: '#123b4f'
-                    });
-                    this.value = '';
-                    return;
-                }
-
-                featureIconFile = file;
-
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    featureIconPreviewData = e.target.result;
-                    const previewDiv = document.getElementById('featureIconPreview');
-                    const previewImg = document.getElementById('featureIconPreviewImg');
-                    const previewName = document.getElementById('featureIconPreviewName');
-
-                    if (previewImg) previewImg.src = e.target.result;
-                    if (previewName) previewName.textContent = file.name;
-                    if (previewDiv) previewDiv.style.display = 'block';
-
-                    const boxElement = document.getElementById('featureIconBox');
-                    const labelSpan = document.getElementById('featureIconLabel');
-                    const icon = boxElement.querySelector('i');
-
-                    if (boxElement) {
-                        boxElement.classList.add('has-file');
-                        if (icon) icon.style.color = '#28a745';
-                        if (labelSpan) {
-                            labelSpan.textContent = '✓ ' + file.name.substring(0, 15) + (file.name.length > 15 ? '...' : '');
-                            labelSpan.style.color = '#28a745';
-                        }
-                    }
-                };
-                reader.readAsDataURL(file);
+                mainImageDeleted = true;
+                document.getElementById('deleteMainImage').value = '1';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Main image will be removed when you save.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
         });
-    }
-}
-
-function removeFeatureIconPreview() {
-    featureIconFile = null;
-    featureIconPreviewData = null;
-    document.getElementById('featureIcon').value = '';
-    document.getElementById('featureIconPreview').style.display = 'none';
-
-    const boxElement = document.getElementById('featureIconBox');
-    const labelSpan = document.getElementById('featureIconLabel');
-    const icon = boxElement.querySelector('i');
-
-    if (boxElement) {
-        boxElement.classList.remove('has-file');
-        if (icon) icon.style.color = '#9bb2c5';
-        if (labelSpan) {
-            labelSpan.textContent = 'Upload Icon';
-            labelSpan.style.color = '#5f7d92';
-        }
-    }
-}
-
-// =============================================
-// ITINERARY
-// =============================================
-
-function addDay() {
-    const container = document.getElementById('itineraryContainer');
-    const dayNumber = container.children.length + 1;
-
-    const dayDiv = document.createElement('div');
-    dayDiv.className = 'itinerary-day';
-    dayDiv.id = 'day-' + dayNumber;
-    dayDiv.innerHTML = `
-        <div class="day-header">
-            <span class="day-label">
-                <span class="day-number">${dayNumber}</span>
-                Day ${dayNumber}
-            </span>
-            <button type="button" class="remove-day" onclick="removeDay('${dayDiv.id}')">
-                <i class="bi bi-x-circle"></i>
-            </button>
-        </div>
-        <div class="day-title-input">
-            <input type="text" class="form-control" id="day_title_${dayNumber}" placeholder="Enter day title (e.g., Arrival & Welcome)" style="font-weight:600;color:#123b4f;">
-        </div>
-        <textarea class="form-control" id="itinerary_${dayNumber}" rows="2" placeholder="Enter description for Day ${dayNumber}"></textarea>
-    `;
-    container.appendChild(dayDiv);
-    updateDayCount();
-}
-
-function removeDay(dayId) {
-    const day = document.getElementById(dayId);
-    if (day && document.getElementById('itineraryContainer').children.length > 1) {
-        day.remove();
-        renumberDays();
-        updateDayCount();
-    } else {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Cannot Remove',
-            text: 'You need at least one day in the itinerary',
-            confirmButtonColor: '#123b4f'
-        });
-    }
-}
-
-function renumberDays() {
-    const container = document.getElementById('itineraryContainer');
-    const days = container.children;
-    for (let i = 0; i < days.length; i++) {
-        const day = days[i];
-        const dayNumber = i + 1;
-        day.id = 'day-' + dayNumber;
-        const numberSpan = day.querySelector('.day-number');
-        if (numberSpan) numberSpan.textContent = dayNumber;
-        const label = day.querySelector('.day-label');
-        if (label) {
-            label.innerHTML = `
-                <span class="day-number">${dayNumber}</span>
-                Day ${dayNumber}
-            `;
-        }
-        const titleInput = day.querySelector('.day-title-input input');
-        if (titleInput) {
-            titleInput.id = 'day_title_' + dayNumber;
-        }
-        const textarea = day.querySelector('textarea');
-        if (textarea) {
-            textarea.id = 'itinerary_' + dayNumber;
-            textarea.placeholder = `Enter description for Day ${dayNumber}`;
-        }
-    }
-}
-
-function updateDayCount() {
-    const count = document.getElementById('itineraryContainer').children.length;
-    document.getElementById('dayCount').textContent = count + ' Day' + (count > 1 ? 's' : '');
-}
-
-// =============================================
-// FEATURES
-// =============================================
-
-function addFeature() {
-    const input = document.getElementById('featureInput');
-    const name = input.value.trim();
-
-    if (!name) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Feature Name Required',
-            text: 'Please enter a feature name',
-            confirmButtonColor: '#123b4f'
-        });
-        input.focus();
-        return;
-    }
-
-    const existing = features.find(f => f.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Duplicate Feature',
-            text: `"${name}" already exists.`,
-            confirmButtonColor: '#123b4f'
-        });
-        input.focus();
-        return;
-    }
-
-    const feature = {
-        name: name,
-        icon: featureIconFile ? featureIconFile.name : null,
-        iconFile: featureIconFile,
-        iconPreview: featureIconPreviewData
     };
 
-    features.push(feature);
-    renderFeatures();
+    window.deleteAdditionalImage = function(index, imagePath) {
+        Swal.fire({
+            title: 'Delete Image?',
+            text: "This will remove this additional image.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const imgItem = document.querySelector(`.current-image-item[data-index="${index}"]`);
+                if (imgItem) {
+                    imgItem.remove();
+                }
 
-    input.value = '';
-    featureIconFile = null;
-    featureIconPreviewData = null;
-    document.getElementById('featureIcon').value = '';
-    document.getElementById('featureIconPreview').style.display = 'none';
+                deletedImages.push(imagePath);
+                document.getElementById('deletedImages').value = JSON.stringify(deletedImages);
 
-    const boxElement = document.getElementById('featureIconBox');
-    const labelSpan = document.getElementById('featureIconLabel');
-    const icon = boxElement.querySelector('i');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Image will be removed when you save.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        });
+    };
 
-    if (boxElement) {
-        boxElement.classList.remove('has-file');
-        if (icon) icon.style.color = '#9bb2c5';
-        if (labelSpan) {
-            labelSpan.textContent = 'Upload Icon';
-            labelSpan.style.color = '#5f7d92';
-        }
+    // =============================================
+    // SWEETALERT2 - CENTERED ALERT
+    // =============================================
+
+    function showAlert(message, type = 'success') {
+        const icons = {
+            success: 'success',
+            error: 'error',
+            warning: 'warning',
+            info: 'info'
+        };
+
+        Swal.fire({
+            icon: icons[type] || 'info',
+            title: type === 'success' ? 'Success!' : type === 'error' ? 'Error!' : type === 'warning' ? 'Warning!' : 'Info',
+            text: message,
+            confirmButtonColor: '#0b2a3e',
+            confirmButtonText: 'OK',
+            timer: type === 'success' ? 2000 : 5000,
+            timerProgressBar: type === 'success' ? true : false,
+            position: 'center'
+        });
     }
 
-    updateFeatureCount();
-}
+    // =============================================
+    // UTILITY FUNCTIONS
+    // =============================================
 
-function removeFeature(index) {
-    // Check if this feature has an icon that needs to be deleted
-    const feature = features[index];
-    if (feature && feature.icon && !feature.icon.startsWith('data:')) {
-        // This is an existing feature with an icon path - mark for deletion
-        const deletedFeatures = JSON.parse(document.getElementById('deletedFeatures').value || '[]');
-        deletedFeatures.push(feature.icon);
-        document.getElementById('deletedFeatures').value = JSON.stringify(deletedFeatures);
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
-    features.splice(index, 1);
-    renderFeatures();
-    updateFeatureCount();
-}
+    // =============================================
+    // FORM SUBMISSION WITH AJAX
+    // =============================================
 
-function renderFeatures() {
-    const container = document.getElementById('featuresContainer');
-    container.innerHTML = '';
-
-    if (features.length === 0) {
-        container.innerHTML = '<div class="empty-badges">No features added yet</div>';
-        return;
-    }
-
-    features.forEach((feature, index) => {
-        const badge = document.createElement('span');
-        badge.className = 'badge-item';
-
-        let iconHtml = '';
-        if (feature.iconPreview) {
-            iconHtml = `<img src="${feature.iconPreview}" class="badge-icon" alt="icon">`;
-        } else if (feature.icon && typeof feature.icon === 'string') {
-            // Check if it's a full URL or just a path
-            const iconSrc = feature.icon.startsWith('http') ? feature.icon : '<?= APP_URL ?>' + feature.icon;
-            iconHtml = `<img src="${iconSrc}" class="badge-icon" alt="icon">`;
-        }
-
-        badge.innerHTML = `
-            ${iconHtml}
-            <span class="badge-name">${escapeHtml(feature.name)}</span>
-            <span class="remove-badge" onclick="removeFeature(${index})">&times;</span>
-        `;
-        container.appendChild(badge);
-    });
-}
-
-function updateFeatureCount() {
-    const count = features.length;
-    document.getElementById('featureCount').textContent = count + ' Feature' + (count > 1 ? 's' : '');
-}
-
-// =============================================
-// UTILITY FUNCTIONS
-// =============================================
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// =============================================
-// FORM SUBMISSION
-// =============================================
-
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('tourPackageForm');
-
-    if (form) {
-        form.addEventListener('submit', function (e) {
+    const editForm = document.getElementById('editCarRentalForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
             // Validate required fields
-            const packageName = document.getElementById('packageName').value.trim();
-            const daysCount = document.getElementById('daysCount').value;
-            const price = document.getElementById('price').value;
-            const shortDescription = document.getElementById('shortDescription').value.trim();
+            const carName = document.getElementById('carName').value.trim();
+            const perDayAmount = document.getElementById('perDayAmount').value.trim();
+            const perKmCharge = document.getElementById('perKmCharge').value.trim();
+            const seatingCapacity = document.getElementById('seatingCapacity').value.trim();
 
-            if (!packageName) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    text: 'Package name is required',
-                    confirmButtonColor: '#123b4f'
-                });
-                document.getElementById('packageName').focus();
+            // Validate car types
+            if (carTypes.length === 0) {
+                showAlert('Please add at least one car type', 'warning');
+                document.getElementById('carTypeInput').focus();
                 return;
             }
 
-            if (!daysCount || daysCount < 1) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    text: 'Please enter valid number of days',
-                    confirmButtonColor: '#123b4f'
-                });
-                document.getElementById('daysCount').focus();
+            if (!carName) {
+                showAlert('Please enter car name', 'warning');
+                document.getElementById('carName').focus();
                 return;
             }
 
-            if (!price || parseFloat(price) <= 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    text: 'Please enter a valid price',
-                    confirmButtonColor: '#123b4f'
-                });
-                document.getElementById('price').focus();
+            if (!perDayAmount || isNaN(perDayAmount) || parseFloat(perDayAmount) <= 0) {
+                showAlert('Please enter valid per day amount', 'warning');
+                document.getElementById('perDayAmount').focus();
                 return;
             }
 
-            if (!shortDescription) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Validation Error',
-                    text: 'Short description is required',
-                    confirmButtonColor: '#123b4f'
-                });
-                document.getElementById('shortDescription').focus();
+            if (!perKmCharge || isNaN(perKmCharge) || parseFloat(perKmCharge) <= 0) {
+                showAlert('Please enter valid per KM charge', 'warning');
+                document.getElementById('perKmCharge').focus();
                 return;
             }
 
-            // Collect itinerary
-            const itinerary = {};
-            const dayElements = document.querySelectorAll('#itineraryContainer .itinerary-day');
-            dayElements.forEach((dayElement, index) => {
-                const dayNumber = index + 1;
-                const titleInput = dayElement.querySelector('.day-title-input input');
-                const textarea = dayElement.querySelector('textarea');
-                const title = titleInput ? titleInput.value.trim() : '';
-                const description = textarea ? textarea.value.trim() : '';
-                itinerary['day' + dayNumber] = {
-                    title: title,
-                    description: description
-                };
-            });
+            if (!seatingCapacity || isNaN(seatingCapacity) || parseInt(seatingCapacity) <= 0) {
+                showAlert('Please enter valid seating capacity', 'warning');
+                document.getElementById('seatingCapacity').focus();
+                return;
+            }
 
-            // Show loading
+            // Show loading state
             const submitBtn = document.getElementById('submitBtn');
             const submitText = document.getElementById('submitText');
             const submitSpinner = document.getElementById('submitSpinner');
@@ -692,61 +376,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Prepare form data
             const formData = new FormData();
-            formData.append('id', document.getElementById('packageId').value);
-            formData.append('package_name', packageName);
-            formData.append('package_type', document.getElementById('packageType').value);
-            formData.append('days_count', daysCount);
-
-            const membersData = members.map(m => ({
-                label: m.label,
-                count: m.count
-            }));
-            formData.append('members', JSON.stringify(membersData));
-
-            formData.append('price', price);
+            formData.append('id', document.getElementById('carId').value);
+            formData.append('car_name', carName);
+            formData.append('car_model', document.getElementById('carModel').value.trim());
+            formData.append('car_brand', document.getElementById('carBrand').value.trim());
+            
+            // Send car types as JSON
+            formData.append('car_type', JSON.stringify(carTypes));
+            
+            formData.append('per_day_amount', perDayAmount);
+            formData.append('per_km_charge', perKmCharge);
+            formData.append('fuel_type', document.getElementById('fuelType').value);
+            formData.append('transmission', document.getElementById('transmission').value);
+            formData.append('seating_capacity', seatingCapacity);
+            formData.append('ac_available', document.getElementById('acAvailable').value);
             formData.append('status', document.getElementById('status').value);
-            formData.append('short_description', shortDescription);
             formData.append('description', document.getElementById('description').value.trim());
-            formData.append('itinerary', JSON.stringify(itinerary));
 
-            // Features
-            const featuresData = features.map(f => ({
-                name: f.name,
-                icon: f.icon || null
-            }));
-            formData.append('features', JSON.stringify(featuresData));
+            // Append deleted images
+            formData.append('deleted_images', JSON.stringify(deletedImages));
+            formData.append('delete_main_image', mainImageDeleted ? '1' : '0');
 
-            // Deleted features (icons to remove)
-            const deletedFeatures = JSON.parse(document.getElementById('deletedFeatures').value || '[]');
-            formData.append('deleted_features', JSON.stringify(deletedFeatures));
-
-            // Main image
+            // Append main image if selected
             const mainImage = document.getElementById('mainImage').files[0];
             if (mainImage) {
                 formData.append('main_image', mainImage);
             }
-            formData.append('delete_main_image', document.getElementById('deleteMainImage').value);
 
-            // Gallery images
-            const galleryFiles = document.getElementById('galleryImages').files;
-            for (let i = 0; i < galleryFiles.length; i++) {
-                formData.append('gallery_images[]', galleryFiles[i]);
+            // Append additional images
+            const additionalFiles = document.getElementById('additionalImages').files;
+            for (let i = 0; i < additionalFiles.length; i++) {
+                formData.append('additional_images[]', additionalFiles[i]);
             }
-            formData.append('deleted_gallery_images', document.getElementById('deletedGalleryImages').value);
 
-            // Feature icons
-            features.forEach((f) => {
-                if (f.iconFile) {
-                    formData.append('feature_icons[]', f.iconFile);
-                    formData.append('feature_icon_names[]', f.name);
-                }
-            });
-
-            // Submit
-            fetch('ajax/edit-tour-package.php', {
-                method: 'POST',
-                body: formData
-            })
+            // AJAX request
+            fetch('ajax/edit-car-rental.php', {
+                    method: 'POST',
+                    body: formData
+                })
                 .then(response => response.json())
                 .then(data => {
                     submitBtn.disabled = false;
@@ -754,22 +421,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     submitSpinner.style.display = 'none';
 
                     if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Updated!',
-                            text: data.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            window.location.href = 'tour-packages.php';
-                        });
+                        showAlert(data.message, 'success');
+                        setTimeout(() => {
+                            window.location.href = 'car-rentals.php';
+                        }, 1500);
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error!',
-                            text: data.message,
-                            confirmButtonColor: '#123b4f'
-                        });
+                        showAlert(data.message, 'error');
                     }
                 })
                 .catch(error => {
@@ -777,12 +434,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     submitText.style.display = 'inline';
                     submitSpinner.style.display = 'none';
                     console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error!',
-                        text: 'An error occurred. Please try again.',
-                        confirmButtonColor: '#123b4f'
-                    });
+                    showAlert('An error occurred. Please try again.', 'error');
                 });
         });
     }

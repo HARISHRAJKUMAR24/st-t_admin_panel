@@ -391,12 +391,21 @@ if (isLoggedIn() && verifyToken($pdo)) {
 
             <div class="login-logo">
                 <div class="logo-image">
-                    <img src="<?= APP_URL ?>uploads/logo.png"
-                        alt="Tours & Travels Logo"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
-                    <div class="fallback-icon">
-                        <i class="bi bi-compass-fill"></i>
-                    </div>
+                    <?php
+                    $logo = getData('panel_logo', 'settings', 'id = 1');
+                    if (!empty($logo)):
+                    ?>
+                        <img src="<?= APP_URL . $logo ?>"
+                            alt="Tours & Travels Logo"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                        <div class="fallback-icon" style="display:none;">
+                            <i class="bi bi-compass-fill"></i>
+                        </div>
+                    <?php else: ?>
+                        <div class="fallback-icon">
+                            <i class="bi bi-compass-fill"></i>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

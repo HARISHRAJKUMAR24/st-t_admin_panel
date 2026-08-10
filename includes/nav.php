@@ -3,9 +3,21 @@
         <i class="bi bi-x-lg"></i>
     </button>
 
-    <!-- Brand: only logo image -->
+    <!-- Brand: logo from database -->
     <div class="sidebar-brand">
-        <img src="./uploads/logo.png" alt="TourVault logo" class="brand-logo-img" />
+        <?php
+        // Get panel_logo from settings table
+        $logo = getData('panel_logo', 'settings', 'id = 1');
+        $logoPath = '';
+
+        // If logo exists in database, use it, otherwise use empty
+        if (!empty($logo)) {
+            $logoPath = APP_URL . $logo;
+        }
+        ?>
+        <?php if (!empty($logo)): ?>
+            <img src="<?= $logoPath ?>" alt="Website Logo" class="brand-logo-img" />
+        <?php endif; ?>
     </div>
 
     <ul class="nav flex-column">

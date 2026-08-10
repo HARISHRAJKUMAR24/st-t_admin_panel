@@ -69,12 +69,12 @@ function verifyToken($pdo)
         logoutUser();
         return false;
     }
-    
+
     try {
         $stmt = $pdo->prepare("SELECT token FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $user = $stmt->fetch();
-        
+
         // If no user found or token is NULL or token doesn't match
         if (!$user || $user['token'] === null || $user['token'] !== $_SESSION['user_token']) {
             logoutUser();
@@ -100,14 +100,19 @@ function logoutUser()
             // Silent fail
         }
     }
-    
+
     // Clear session
     $_SESSION = array();
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $params["path"],
+            $params["domain"],
+            $params["secure"],
+            $params["httponly"]
         );
     }
     session_destroy();
@@ -119,7 +124,7 @@ function getCurrentUser($pdo)
     if (!isLoggedIn()) {
         return null;
     }
-    
+
     try {
         $stmt = $pdo->prepare("SELECT id, name, email, role FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
@@ -179,4 +184,34 @@ function verifyCsrfToken($token)
 {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
-?>
+
+
+
+/**
+ * Get a single value from database
+ * @param string $column Column name
+ * @param string $table Table name
+ * @param string|array $condition WHERE condition (optional)
+ * @return mixed
+ */
+function getData($column, $table, $condition = null)
+{
+    global $pdo; // Use $pdo instead of $db
+
+    try {
+        $sql = "SELECT $column FROM $table";
+
+        if ($condition) {
+            $sql .= " WHERE $condition";
+        }
+        $sql .= " LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        error_log("Error in getData: " . $e->getMessage());
+        return null;
+    }
+}

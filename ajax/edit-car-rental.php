@@ -3,8 +3,8 @@
 // AJAX UPDATE CAR RENTAL - WITH IMAGE DELETE
 // =============================================
 
-// Disable error display
-error_reporting(0);
+// Enable error reporting for debugging
+error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 // Set JSON header
@@ -31,7 +31,17 @@ try {
     $carName = isset($_POST['car_name']) ? trim($_POST['car_name']) : '';
     $carModel = isset($_POST['car_model']) ? trim($_POST['car_model']) : '';
     $carBrand = isset($_POST['car_brand']) ? trim($_POST['car_brand']) : '';
-    $carType = isset($_POST['car_type']) ? trim($_POST['car_type']) : '';
+    
+    // Get car types as JSON and convert to comma separated string
+    $carTypesJson = isset($_POST['car_type']) ? $_POST['car_type'] : '[]';
+    $carTypesArray = json_decode($carTypesJson, true) ?: [];
+    
+    // Filter out empty values and convert array to comma-separated string
+    $carTypesArray = array_filter($carTypesArray, function($val) {
+        return $val !== '' && $val !== null;
+    });
+    $carType = implode(', ', $carTypesArray);
+    
     $perDayAmount = isset($_POST['per_day_amount']) ? floatval($_POST['per_day_amount']) : 0;
     $perKmCharge = isset($_POST['per_km_charge']) ? floatval($_POST['per_km_charge']) : 0;
     $fuelType = isset($_POST['fuel_type']) ? trim($_POST['fuel_type']) : '';
@@ -46,7 +56,7 @@ try {
     $deletedImages = json_decode($deletedImagesJson, true) ?: [];
 
     // Validate required fields
-    if ($id <= 0 || empty($carName) || $perDayAmount <= 0 || $perKmCharge <= 0 || $seatingCapacity <= 0) {
+    if ($id <= 0 || empty($carName) || empty($carType) || $perDayAmount <= 0 || $perKmCharge <= 0 || $seatingCapacity <= 0) {
         echo json_encode([
             'success' => false,
             'message' => 'Please fill in all required fields'
@@ -232,3 +242,5 @@ try {
         'message' => 'An error occurred'
     ]);
 }
+
+?>
