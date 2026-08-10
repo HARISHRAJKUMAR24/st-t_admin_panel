@@ -52,6 +52,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'travel-bookings.php' || basename($_SERVER['PHP_SELF']) == 'add-travel-booking.php' || basename($_SERVER['PHP_SELF']) == 'edit-travel-booking.php' ? 'active' : '' ?>" href="travel-bookings">
+                <i class="bi bi-geo-alt-fill"></i> Travel
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'tour-packages.php' ? 'active' : '' ?>" href="tour-packages">
                 <i class="bi bi-suitcase-fill"></i> Tours
             </a>

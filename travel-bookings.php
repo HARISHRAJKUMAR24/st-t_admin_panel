@@ -3,29 +3,26 @@ require_once 'config/config.php';
 require_once 'config/function.php';
 requireLogin();
 
-// Verify token
 if (!verifyToken($pdo)) {
     header("Location: " . APP_URL . "login.php");
     exit();
 }
 
 $currentUser = getCurrentUser($pdo);
-$pageTitle = "Offers";
+$pageTitle = "Travel Bookings";
 
-// Get currency from settings
 $currencyCode = getCurrencyCode($pdo);
 $currencySymbol = getCurrencySymbol($currencyCode);
 
-// Fetch all offers
-$stmt = $pdo->query("SELECT * FROM offers ORDER BY created_at DESC");
-$offers = $stmt->fetchAll();
+$stmt = $pdo->query("SELECT tb.*, u.name as user_name FROM travel_bookings tb LEFT JOIN users u ON tb.user_id = u.id ORDER BY tb.created_at DESC");
+$bookings = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include_once 'includes/head_links.php'; ?>
-    <title>Offers · Tour Admin</title>
+    <title>Travel Bookings · Tour Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .page-wrapper {
@@ -75,7 +72,7 @@ $offers = $stmt->fetchAll();
             color: #ffd966;
         }
 
-        .offer-card {
+        .booking-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(4px);
             border-radius: 12px;
@@ -86,61 +83,40 @@ $offers = $stmt->fetchAll();
             height: 100%;
         }
 
-        .offer-card:hover {
+        .booking-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 30px rgba(0, 20, 30, 0.08);
             border-color: #ffd966;
         }
 
-        .offer-card .offer-image {
-            width: 100%;
-            height: 120px;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 0.6rem;
-            background: #f0f3f7;
-        }
-
-        .offer-card .offer-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .offer-card .offer-code {
+        .booking-card .booking-id {
             font-size: 0.6rem;
             color: #9bb2c5;
             font-weight: 600;
             letter-spacing: 0.3px;
         }
 
-        .offer-card .offer-title {
+        .booking-card .booking-car {
             font-weight: 600;
             color: #123b4f;
             font-size: 0.95rem;
             margin: 0.15rem 0;
         }
 
-        .offer-card .offer-discount {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #dc3545;
-        }
-
-        .offer-card .offer-discount .discount-type {
+        .booking-card .booking-car .car-type {
+            font-weight: 400;
             font-size: 0.7rem;
-            font-weight: 500;
             color: #5f7d92;
         }
 
-        .offer-card .offer-meta {
+        .booking-card .booking-meta {
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
             margin: 0.3rem 0;
         }
 
-        .offer-card .offer-meta .badge-custom {
+        .booking-card .booking-meta .badge-custom {
             background: rgba(255, 215, 100, 0.2);
             color: #b8860b;
             padding: 0.1rem 0.5rem;
@@ -149,7 +125,7 @@ $offers = $stmt->fetchAll();
             font-weight: 600;
         }
 
-        .offer-card .offer-meta .badge-date {
+        .booking-card .booking-meta .badge-days {
             background: rgba(18, 59, 79, 0.1);
             color: #123b4f;
             padding: 0.1rem 0.5rem;
@@ -158,43 +134,89 @@ $offers = $stmt->fetchAll();
             font-weight: 600;
         }
 
-        .offer-card .offer-meta .badge-status {
+        .booking-card .booking-meta .badge-seats {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
             padding: 0.1rem 0.5rem;
             border-radius: 16px;
             font-size: 0.6rem;
             font-weight: 600;
         }
 
-        .badge-status.active {
-            background: rgba(40, 167, 69, 0.15);
-            color: #28a745;
+        .booking-card .booking-meta .badge-status {
+            padding: 0.1rem 0.5rem;
+            border-radius: 16px;
+            font-size: 0.6rem;
+            font-weight: 600;
         }
 
-        .badge-status.inactive {
-            background: rgba(220, 53, 69, 0.15);
-            color: #dc3545;
-        }
-
-        .badge-status.expired {
+        .badge-status.pending {
             background: rgba(255, 193, 7, 0.15);
             color: #ffc107;
         }
+        .badge-status.confirmed {
+            background: rgba(40, 167, 69, 0.15);
+            color: #28a745;
+        }
+        .badge-status.cancelled {
+            background: rgba(220, 53, 69, 0.15);
+            color: #dc3545;
+        }
+        .badge-status.completed {
+            background: rgba(23, 162, 184, 0.15);
+            color: #17a2b8;
+        }
 
-        .offer-card .offer-packages {
+        .booking-card .booking-price {
+            font-weight: 700;
+            color: #123b4f;
+            font-size: 1rem;
+        }
+
+        .booking-card .booking-price .price-breakdown {
+            font-size: 0.6rem;
+            color: #5f7d92;
+            font-weight: 400;
+            display: block;
+        }
+
+        .booking-card .booking-stops {
             margin: 0.3rem 0;
         }
 
-        .offer-card .offer-packages .package-tag {
+        .booking-card .booking-stops .stop-tag {
             display: inline-block;
             background: rgba(18, 59, 79, 0.05);
             color: #123b4f;
-            padding: 0.1rem 0.4rem;
+            padding: 0.05rem 0.4rem;
             border-radius: 10px;
             font-size: 0.55rem;
             margin: 1px;
         }
 
-        .offer-card .offer-actions {
+        .booking-card .booking-provide {
+            margin: 0.3rem 0;
+        }
+
+        .booking-card .booking-provide .provide-tag {
+            display: inline-block;
+            background: rgba(40, 167, 69, 0.08);
+            color: #28a745;
+            padding: 0.05rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.55rem;
+            margin: 1px;
+        }
+
+        .booking-card .booking-provide .provide-tag img {
+            width: 12px;
+            height: 12px;
+            object-fit: contain;
+            margin-right: 3px;
+            vertical-align: middle;
+        }
+
+        .booking-card .booking-actions {
             display: flex;
             gap: 6px;
             margin-top: 0.6rem;
@@ -202,7 +224,7 @@ $offers = $stmt->fetchAll();
             border-top: 1px solid #e8edf3;
         }
 
-        .offer-card .offer-actions .btn-action {
+        .booking-card .booking-actions .btn-action {
             padding: 0.2rem 0.7rem;
             border-radius: 6px;
             font-size: 0.7rem;
@@ -234,6 +256,16 @@ $offers = $stmt->fetchAll();
         .btn-action.btn-delete:hover {
             background: #dc3545;
             color: #fff;
+        }
+
+        .btn-action.btn-view {
+            background: rgba(255, 215, 100, 0.2);
+            color: #b8860b;
+        }
+
+        .btn-action.btn-view:hover {
+            background: #ffd966;
+            color: #123b4f;
         }
 
         .empty-state {
@@ -293,16 +325,12 @@ $offers = $stmt->fetchAll();
                 justify-content: center;
             }
 
-            .offer-card .offer-image {
-                height: 100px;
-            }
-
-            .offer-card .offer-title {
+            .booking-card .booking-car {
                 font-size: 0.85rem;
             }
 
-            .offer-card .offer-discount {
-                font-size: 1rem;
+            .booking-card .booking-price {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -320,98 +348,99 @@ $offers = $stmt->fetchAll();
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
-                <small>Offers</small>
+                <small>Travel Bookings</small>
             </div>
         </div>
 
         <div class="page-wrapper">
             <div class="page-header">
                 <div>
-                    <h4><i class="bi bi-tags me-2" style="color:#f5b342;"></i>Offers</h4>
-                    <p>Manage all your promotional offers</p>
+                    <h4><i class="bi bi-car-front me-2" style="color:#f5b342;"></i>Travel Bookings</h4>
+                    <p>Manage all travel bookings</p>
                 </div>
-                <a href="add-offer.php" class="btn-add">
+                <a href="add-travel-booking.php" class="btn-add">
                     <i class="bi bi-plus-circle"></i> Add New
                 </a>
             </div>
 
-            <?php if (empty($offers)): ?>
+            <?php if (empty($bookings)): ?>
                 <div class="empty-state">
-                    <i class="bi bi-tags"></i>
-                    <h5>No Offers Yet</h5>
-                    <p>Create your first promotional offer to get started.</p>
-                    <a href="add-offer.php" class="btn-add-empty">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Offer
+                    <i class="bi bi-car-front"></i>
+                    <h5>No Bookings Yet</h5>
+                    <p>Create your first travel booking to get started.</p>
+                    <a href="add-travel-booking.php" class="btn-add-empty">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Booking
                     </a>
                 </div>
             <?php else: ?>
                 <div class="row g-3">
-                    <?php foreach ($offers as $offer):
-                        $packageIds = json_decode($offer['tour_packages'], true) ?: [];
-                        $packageNames = [];
-                        if (!empty($packageIds)) {
-                            $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
-                            $stmt = $pdo->prepare("SELECT package_id, package_name FROM tour_packages WHERE id IN ($placeholders)");
-                            $stmt->execute($packageIds);
-                            $packages = $stmt->fetchAll();
-                            foreach ($packages as $pkg) {
-                                $packageNames[] = $pkg['package_name'] . ' (' . $pkg['package_id'] . ')';
-                            }
-                        }
+                    <?php foreach ($bookings as $booking):
+                        $stops = json_decode($booking['stops'], true) ?: [];
+                        $provide = json_decode($booking['what_we_provide'], true) ?: [];
                     ?>
                         <div class="col-md-6 col-lg-4 col-xl-3">
-                            <div class="offer-card">
-                                <div class="offer-image">
-                                    <?php if (!empty($offer['main_image'])): ?>
-                                        <img src="<?= APP_URL . $offer['main_image'] ?>" alt="<?= htmlspecialchars($offer['title']) ?>">
-                                    <?php else: ?>
-                                        <img src="<?= APP_URL ?>assets/images/no-image.jpg" alt="No image">
-                                    <?php endif; ?>
+                            <div class="booking-card">
+                                <div class="booking-id">
+                                    <?= htmlspecialchars($booking['booking_id']) ?>
+                                    <span style="font-weight:400;color:#9bb2c5;font-size:0.5rem;">by <?= htmlspecialchars($booking['user_name'] ?? 'Unknown') ?></span>
+                                </div>
+                                <div class="booking-car">
+                                    <?= htmlspecialchars($booking['car_name']) ?>
+                                    <span class="car-type">(<?= htmlspecialchars($booking['car_type'] ?? 'Sedan') ?>)</span>
                                 </div>
 
-                                <div class="offer-code"><?= htmlspecialchars($offer['offer_code']) ?></div>
-                                <h5 class="offer-title"><?= htmlspecialchars($offer['title']) ?></h5>
-
-                                <div class="offer-discount">
-                                    <?php if ($offer['discount_type'] == 'percentage'): ?>
-                                        <?= number_format($offer['discount_value'], 0) ?>%
-                                    <?php else: ?>
-                                        <?= htmlspecialchars($currencySymbol) ?><?= number_format($offer['discount_value'], 2) ?>
-                                    <?php endif; ?>
-                                    <span class="discount-type"><?= ucfirst($offer['discount_type']) ?></span>
+                                <div class="booking-meta">
+                                    <span class="badge-days"><i class="bi bi-calendar3 me-1"></i><?= $booking['days'] ?>d</span>
+                                    <span class="badge-seats"><i class="bi bi-person me-1"></i><?= $booking['seat_count'] ?></span>
+                                    <span class="badge-status <?= $booking['status'] ?>"><?= ucfirst($booking['status']) ?></span>
                                 </div>
 
-                                <div class="offer-meta">
-                                    <?php if (!empty($offer['start_date'])): ?>
-                                        <span class="badge-date"><i class="bi bi-calendar3 me-1"></i><?= date('M d', strtotime($offer['start_date'])) ?></span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($offer['end_date'])): ?>
-                                        <span class="badge-date"><i class="bi bi-calendar3 me-1"></i>Until <?= date('M d', strtotime($offer['end_date'])) ?></span>
-                                    <?php endif; ?>
-                                    <span class="badge-status <?= $offer['status'] ?>"><?= ucfirst($offer['status']) ?></span>
+                                <div class="booking-price">
+                                    <?= htmlspecialchars($currencySymbol) ?><?= number_format($booking['total_price'], 2) ?>
+                                    <span class="price-breakdown">
+                                        <?= htmlspecialchars($currencySymbol) ?><?= number_format($booking['per_day_price'], 2) ?>/d × <?= $booking['days'] ?> + <?= htmlspecialchars($currencySymbol) ?><?= number_format($booking['per_km_charge'], 2) ?>/km
+                                    </span>
                                 </div>
 
-                                <?php if (!empty($packageNames)): ?>
-                                    <div class="offer-packages">
-                                        <?php foreach (array_slice($packageNames, 0, 2) as $name): ?>
-                                            <span class="package-tag"><?= htmlspecialchars($name) ?></span>
+                                <?php if (!empty($stops)): ?>
+                                    <div class="booking-stops">
+                                        <?php foreach (array_slice($stops, 0, 2) as $stop): ?>
+                                            <span class="stop-tag">
+                                                <i class="bi bi-geo-alt me-1"></i>
+                                                <?= htmlspecialchars($stop['pickup']) ?> → <?= htmlspecialchars($stop['drop']) ?>
+                                                <?= isset($stop['distance']) ? number_format($stop['distance'], 1) : '--' ?>km
+                                            </span>
                                         <?php endforeach; ?>
-                                        <?php if (count($packageNames) > 2): ?>
-                                            <span class="package-tag">+<?= count($packageNames) - 2 ?></span>
+                                        <?php if (count($stops) > 2): ?>
+                                            <span class="stop-tag">+<?= count($stops) - 2 ?></span>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 
-                                <?php if (!empty($offer['description'])): ?>
-                                    <p style="font-size:0.7rem;color:#5f7d92;margin:0.3rem 0;"><?= htmlspecialchars(substr($offer['description'], 0, 60)) ?>...</p>
+                                <?php if (!empty($provide)): ?>
+                                    <div class="booking-provide">
+                                        <?php foreach (array_slice($provide, 0, 2) as $item): ?>
+                                            <span class="provide-tag">
+                                                <?php if (!empty($item['icon'])): ?>
+                                                    <img src="<?= APP_URL . $item['icon'] ?>" alt="">
+                                                <?php else: ?>
+                                                    <i class="bi bi-check-circle-fill" style="font-size:0.5rem;"></i>
+                                                <?php endif; ?>
+                                                <?= htmlspecialchars($item['name']) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                        <?php if (count($provide) > 2): ?>
+                                            <span class="provide-tag">+<?= count($provide) - 2 ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                 <?php endif; ?>
 
-                                <div class="offer-actions">
-                                    <a href="edit-offer.php?offer_id=<?= $offer['offer_code'] ?>" class="btn-action btn-edit">
-                                        <i class="bi bi-pencil"></i> Edit
+                                <div class="booking-actions">
+                                    <a href="edit-travel-booking.php?booking_id=<?= $booking['booking_id'] ?>" class="btn-action btn-edit">
+                                        <i class="bi bi-pencil"></i>
                                     </a>
-                                    <button class="btn-action btn-delete" onclick="deleteOffer(<?= $offer['id'] ?>, '<?= $offer['offer_code'] ?>')">
-                                        <i class="bi bi-trash"></i> Delete
+                                    <button class="btn-action btn-delete" onclick="deleteBooking(<?= $booking['id'] ?>, '<?= $booking['booking_id'] ?>')">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -423,10 +452,10 @@ $offers = $stmt->fetchAll();
     </div>
 
     <script>
-        function deleteOffer(id, offerCode) {
+        function deleteBooking(id, bookingId) {
             Swal.fire({
-                title: 'Delete Offer?',
-                text: 'Are you sure you want to delete offer ' + offerCode + '? This action cannot be undone.',
+                title: 'Delete Booking?',
+                text: 'Are you sure you want to delete booking ' + bookingId + '? This action cannot be undone.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -436,17 +465,15 @@ $offers = $stmt->fetchAll();
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: 'Deleting...',
-                        text: 'Please wait while we delete the offer.',
+                        text: 'Please wait...',
                         allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
+                        didOpen: () => { Swal.showLoading(); }
                     });
 
                     const formData = new FormData();
                     formData.append('id', id);
 
-                    fetch('ajax/delete-offer.php', {
+                    fetch('ajax/delete-travel-booking.php', {
                             method: 'POST',
                             body: formData
                         })

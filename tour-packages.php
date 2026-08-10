@@ -36,32 +36,37 @@ $packages = $stmt->fetchAll();
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
         }
 
         .page-header h4 {
             font-weight: 600;
             color: #123b4f;
             margin-bottom: 0;
+            font-size: 1.2rem;
         }
 
         .page-header p {
             color: #5f7d92;
             margin-bottom: 0;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .btn-add {
             background: linear-gradient(145deg, #0b2a3e 0%, #123b4f 100%);
             color: #fff;
             border: none;
-            border-radius: 12px;
-            padding: 0.6rem 1.8rem;
+            border-radius: 10px;
+            padding: 0.4rem 1.2rem;
             font-weight: 600;
             transition: all 0.3s;
             text-decoration: none;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .btn-add:hover {
@@ -73,8 +78,8 @@ $packages = $stmt->fetchAll();
         .package-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(4px);
-            border-radius: 16px;
-            padding: 1.25rem;
+            border-radius: 12px;
+            padding: 0.9rem;
             border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 4px 16px rgba(0, 20, 30, 0.04);
             transition: all 0.3s ease;
@@ -89,62 +94,62 @@ $packages = $stmt->fetchAll();
 
         .package-card .package-image {
             width: 100%;
-            height: 180px;
-            border-radius: 12px;
+            height: 140px;
+            border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 1rem;
+            margin-bottom: 0.6rem;
             background: #f0f3f7;
         }
 
         .package-card .package-image img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .package-card .package-id {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: #9bb2c5;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .package-card .package-name {
             font-weight: 600;
             color: #123b4f;
-            font-size: 1.1rem;
-            margin: 0.25rem 0;
+            font-size: 0.95rem;
+            margin: 0.15rem 0;
         }
 
         .package-card .package-meta {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             flex-wrap: wrap;
-            margin: 0.5rem 0;
+            margin: 0.3rem 0;
         }
 
         .package-card .package-meta .badge-custom {
             background: rgba(255, 215, 100, 0.2);
             color: #b8860b;
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 16px;
+            font-size: 0.6rem;
             font-weight: 600;
         }
 
         .package-card .package-meta .badge-days {
             background: rgba(18, 59, 79, 0.1);
             color: #123b4f;
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 16px;
+            font-size: 0.6rem;
             font-weight: 600;
         }
 
         .package-card .package-meta .badge-status {
-            padding: 0.2rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 16px;
+            font-size: 0.6rem;
             font-weight: 600;
         }
 
@@ -166,7 +171,7 @@ $packages = $stmt->fetchAll();
         .package-card .package-price {
             font-weight: 700;
             color: #123b4f;
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
 
         .package-card .package-price .currency-symbol {
@@ -174,33 +179,25 @@ $packages = $stmt->fetchAll();
             margin-right: 2px;
         }
 
-        .package-card .package-price .discount {
-            color: #dc3545;
-            font-size: 0.9rem;
-            text-decoration: line-through;
-            margin-left: 8px;
-            font-weight: 400;
-        }
-
         .package-card .package-actions {
             display: flex;
-            gap: 8px;
-            margin-top: 1rem;
-            padding-top: 1rem;
+            gap: 6px;
+            margin-top: 0.6rem;
+            padding-top: 0.6rem;
             border-top: 1px solid #e8edf3;
         }
 
         .package-card .package-actions .btn-action {
-            padding: 0.3rem 1rem;
-            border-radius: 8px;
-            font-size: 0.8rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 500;
             border: none;
             transition: all 0.3s;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             cursor: pointer;
         }
 
@@ -234,23 +231,64 @@ $packages = $stmt->fetchAll();
             color: #123b4f;
         }
 
+        .feature-tag {
+            display: inline-block;
+            background: rgba(18, 59, 79, 0.05);
+            color: #123b4f;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.55rem;
+            margin: 1px;
+        }
+
+        .feature-tag img {
+            width: 12px;
+            height: 12px;
+            object-fit: contain;
+            display: inline;
+            margin-right: 3px;
+            vertical-align: middle;
+        }
+
         .empty-state {
             text-align: center;
-            padding: 4rem 2rem;
+            padding: 3rem 1.5rem;
         }
 
         .empty-state i {
-            font-size: 4rem;
+            font-size: 3rem;
             color: #e8edf3;
         }
 
         .empty-state h5 {
             color: #123b4f;
-            margin-top: 1rem;
+            margin-top: 0.8rem;
+            font-size: 1.1rem;
         }
 
         .empty-state p {
             color: #5f7d92;
+            font-size: 0.85rem;
+        }
+
+        .btn-add-empty {
+            background: linear-gradient(145deg, #0b2a3e 0%, #123b4f 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-add-empty:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(11, 42, 62, 0.2);
+            color: #ffd966;
         }
 
         @media (max-width: 768px) {
@@ -261,15 +299,24 @@ $packages = $stmt->fetchAll();
             .page-header {
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 10px;
             }
 
             .page-header .btn-add {
                 width: 100%;
-                text-align: center;
+                justify-content: center;
             }
 
             .package-card .package-image {
-                height: 140px;
+                height: 110px;
+            }
+
+            .package-card .package-name {
+                font-size: 0.85rem;
+            }
+
+            .package-card .package-price {
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -298,7 +345,7 @@ $packages = $stmt->fetchAll();
                     <p>Manage all your tour packages</p>
                 </div>
                 <a href="add-tour-package.php" class="btn-add">
-                    <i class="bi bi-plus-circle me-2"></i>Add New Package
+                    <i class="bi bi-plus-circle"></i> Add New
                 </a>
             </div>
 
@@ -307,18 +354,18 @@ $packages = $stmt->fetchAll();
                     <i class="bi bi-suitcase"></i>
                     <h5>No Tour Packages Yet</h5>
                     <p>Create your first tour package to get started.</p>
-                    <a href="add-tour-package.php" class="btn-add" style="display:inline-block;margin-top:1rem;">
+                    <a href="add-tour-package.php" class="btn-add-empty">
                         <i class="bi bi-plus-circle me-2"></i>Add New Package
                     </a>
                 </div>
             <?php else: ?>
-                <div class="row g-4">
+                <div class="row g-3">
                     <?php foreach ($packages as $package): ?>
                         <?php
                         $gallery = json_decode($package['gallery_images'], true) ?: [];
                         $features = json_decode($package['features'], true) ?: [];
                         ?>
-                        <div class="col-md-6 col-lg-4">
+                        <div class="col-md-6 col-lg-4 col-xl-3">
                             <div class="package-card">
                                 <div class="package-image">
                                     <?php if (!empty($package['main_image'])): ?>
@@ -334,31 +381,31 @@ $packages = $stmt->fetchAll();
                                 <div class="package-meta">
                                     <span class="badge-days"><i class="bi bi-calendar3 me-1"></i><?= $package['days_count'] ?> Days</span>
                                     <?php if ($package['adults'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['adults'] ?> Adults</span>
+                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['adults'] ?></span>
                                     <?php endif; ?>
                                     <?php if ($package['children'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['children'] ?> Children</span>
+                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['children'] ?></span>
                                     <?php endif; ?>
                                     <?php if ($package['infants'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['infants'] ?> Infants</span>
+                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['infants'] ?></span>
                                     <?php endif; ?>
                                     <span class="badge-status <?= $package['status'] ?>"><?= ucfirst($package['status']) ?></span>
                                 </div>
 
                                 <?php if (!empty($features)): ?>
-                                    <div style="margin: 0.5rem 0;">
-                                        <?php foreach (array_slice($features, 0, 3) as $feature): ?>
-                                            <span class="badge-custom" style="background:rgba(18,59,79,0.05);color:#123b4f;font-size:0.65rem;">
+                                    <div style="margin: 0.3rem 0;">
+                                        <?php foreach (array_slice($features, 0, 2) as $feature): ?>
+                                            <span class="feature-tag">
                                                 <?php if (!empty($feature['icon'])): ?>
-                                                    <img src="<?= APP_URL . $feature['icon'] ?>" style="width:14px;height:14px;object-fit:contain;display:inline;margin-right:4px;">
+                                                    <img src="<?= APP_URL . $feature['icon'] ?>" alt="">
                                                 <?php else: ?>
-                                                    <i class="bi bi-check-circle-fill" style="font-size:0.6rem;"></i>
+                                                    <i class="bi bi-check-circle-fill" style="font-size:0.5rem;"></i>
                                                 <?php endif; ?>
                                                 <?= htmlspecialchars($feature['name']) ?>
                                             </span>
                                         <?php endforeach; ?>
-                                        <?php if (count($features) > 3): ?>
-                                            <span class="badge-custom" style="background:rgba(18,59,79,0.05);color:#123b4f;font-size:0.65rem;">+<?= count($features) - 3 ?> more</span>
+                                        <?php if (count($features) > 2): ?>
+                                            <span class="feature-tag">+<?= count($features) - 2 ?></span>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
@@ -369,12 +416,11 @@ $packages = $stmt->fetchAll();
                                 </div>
 
                                 <div class="package-actions">
-                                    <!-- Edit link using package_id instead of id -->
                                     <a href="edit-tour-package.php?package_id=<?= $package['package_id'] ?>" class="btn-action btn-edit">
-                                        <i class="bi bi-pencil"></i> Edit
+                                        <i class="bi bi-pencil"></i>
                                     </a>
                                     <button class="btn-action btn-delete" onclick="deletePackage(<?= $package['id'] ?>, '<?= $package['package_id'] ?>')">
-                                        <i class="bi bi-trash"></i> Delete
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -453,6 +499,7 @@ $packages = $stmt->fetchAll();
             });
         }
     </script>
+    <script src="<?= APP_URL ?>javascript/main.js"></script>
 </body>
 
 </html>

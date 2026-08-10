@@ -25,6 +25,7 @@ include_once 'config/config.php';
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
+
             </div>
         </div>
 
