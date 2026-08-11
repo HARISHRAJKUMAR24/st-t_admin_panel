@@ -36,45 +36,78 @@ try {
 
     $heroImagePath = $settings['hero_image'] ?? null;
 
-    // Delete hero image if requested
-    if ($deleteHeroImage == 1 && $heroImagePath) {
+    // =============================================
+    // DELETE OLD HERO IMAGE AND FOLDERS
+    // =============================================
+    
+    // Check if we're uploading a new image
+    $isUploadingNew = isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK;
+    
+    // If deleting or uploading new, remove old image and folders
+    if (($deleteHeroImage == 1 || $isUploadingNew) && $heroImagePath) {
         $fullPath = '../' . $heroImagePath;
+        $fullPath = str_replace('\\', '/', $fullPath);
+        
+        // Delete the image file
         if (file_exists($fullPath)) {
             @unlink($fullPath);
-            // Delete empty folders
-            $dir = dirname($fullPath);
-            if (is_dir($dir)) {
-                $files = scandir($dir);
-                if (count($files) <= 2) {
-                    @rmdir($dir);
-                    $parentDir = dirname($dir);
-                    if (is_dir($parentDir) && count(scandir($parentDir)) <= 2) {
-                        @rmdir($parentDir);
-                    }
+        }
+        
+        // Get folder structure
+        // Example: ../uploads/settings/hero/123456/2024-01-15/image.jpg
+        $dateFolder = dirname($fullPath);      // ../uploads/settings/hero/123456/2024-01-15
+        $numberFolder = dirname($dateFolder);   // ../uploads/settings/hero/123456
+        $typeFolder = dirname($numberFolder);   // ../uploads/settings/hero
+        
+        // Delete date folder (2024-01-15)
+        if (is_dir($dateFolder)) {
+            $files = scandir($dateFolder);
+            $files = array_diff($files, ['.', '..']);
+            // Delete any remaining files in date folder
+            foreach ($files as $file) {
+                $filePath = $dateFolder . '/' . $file;
+                if (is_file($filePath)) {
+                    @unlink($filePath);
                 }
             }
+            @rmdir($dateFolder);
         }
+        
+        // Delete number folder (123456)
+        if (is_dir($numberFolder)) {
+            $files = scandir($numberFolder);
+            $files = array_diff($files, ['.', '..']);
+            if (empty($files)) {
+                @rmdir($numberFolder);
+            }
+        }
+        
+        // Delete type folder (hero) if empty
+        if (is_dir($typeFolder)) {
+            $files = scandir($typeFolder);
+            $files = array_diff($files, ['.', '..']);
+            if (empty($files)) {
+                @rmdir($typeFolder);
+            }
+        }
+        
+        // Delete settings folder if empty
+        $settingsFolder = dirname($typeFolder); // ../uploads/settings
+        if (is_dir($settingsFolder)) {
+            $files = scandir($settingsFolder);
+            $files = array_diff($files, ['.', '..']);
+            if (empty($files)) {
+                @rmdir($settingsFolder);
+            }
+        }
+        
         $heroImagePath = null;
     }
 
-    // Upload new hero image
-    if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
-        // Delete old image if exists and not already deleted
-        if ($heroImagePath && $deleteHeroImage != 1) {
-            $fullPath = '../' . $heroImagePath;
-            if (file_exists($fullPath)) {
-                @unlink($fullPath);
-                $dir = dirname($fullPath);
-                if (is_dir($dir) && count(scandir($dir)) <= 2) {
-                    @rmdir($dir);
-                    $parentDir = dirname($dir);
-                    if (is_dir($parentDir) && count(scandir($parentDir)) <= 2) {
-                        @rmdir($parentDir);
-                    }
-                }
-            }
-        }
-
+    // =============================================
+    // UPLOAD NEW HERO IMAGE
+    // =============================================
+    if ($isUploadingNew) {
         // Create upload folder
         $uploadFolder = createUploadFolder('../uploads', 'settings/hero');
         if (!$uploadFolder) {
@@ -83,7 +116,8 @@ try {
         
         // Get file info
         $file = $_FILES['hero_image'];
-        $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
         $fullPath = $uploadFolder . '/' . $fileName;
         $fullPath = str_replace('\\', '/', $fullPath);
         
@@ -91,11 +125,13 @@ try {
         if (move_uploaded_file($file['tmp_name'], $fullPath)) {
             $heroImagePath = str_replace('../', '', $fullPath);
         } else {
-            throw new Exception('Failed to move uploaded file');
+            throw new Exception('Failed to upload image');
         }
     }
 
-    // Update database
+    // =============================================
+    // UPDATE DATABASE
+    // =============================================
     $stmt = $pdo->prepare("UPDATE settings SET 
         site_title = ?, 
         footer_text = ?, 
@@ -118,7 +154,7 @@ try {
     error_log('Database error in update-website-settings.php: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Database error occurred: ' . $e->getMessage()
+        'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
     error_log('Error in update-website-settings.php: ' . $e->getMessage());

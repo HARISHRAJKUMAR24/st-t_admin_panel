@@ -208,7 +208,7 @@ if (!$websiteSettings) {
             <!-- Header -->
             <div class="settings-header">
                 <h4><i class="bi bi-gear me-2" style="color:#f5b342;"></i>Settings</h4>
-                <p>Manage your account settings and preferences</p>
+                
             </div>
 
             <!-- Settings Cards - Compact Grid -->

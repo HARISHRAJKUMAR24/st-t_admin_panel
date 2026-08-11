@@ -530,7 +530,7 @@ $cars = $stmt->fetchAll();
 
             <div class="page-header">
                 <h4><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Book Your Travel</h4>
-                <p>Select a car, add stops, and book your ride</p>
+               
             </div>
 
             <div class="form-container">

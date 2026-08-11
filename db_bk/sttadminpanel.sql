@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2026 at 09:04 AM
+-- Generation Time: Aug 11, 2026 at 12:52 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -118,15 +118,18 @@ CREATE TABLE `settings` (
   `site_title` varchar(100) DEFAULT 'Tour Admin Panel',
   `website_logo` varchar(255) DEFAULT NULL,
   `favicon` varchar(255) DEFAULT NULL,
-  `panel_logo` varchar(255) DEFAULT NULL
+  `panel_logo` varchar(255) DEFAULT NULL,
+  `hero_image` varchar(255) DEFAULT NULL,
+  `site_tagline` varchar(255) DEFAULT NULL,
+  `footer_text` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `settings`
 --
 
-INSERT INTO `settings` (`id`, `site_name`, `contact_email`, `contact_phone`, `address`, `currency`, `social_links`, `created_at`, `updated_at`, `timezone`, `site_title`, `website_logo`, `favicon`, `panel_logo`) VALUES
-(1, 'Tour Admin', 'admin@example.com', '+1234567890', '4/44 kadai theru rediplayam\r\nRamanathapuram Addl talk Thanjavur', 'INR', NULL, '2026-08-08 17:30:12', '2026-08-10 05:20:25', 'Asia/Kolkata', 'Tour Admin Panel', 'uploads/settings/logo/255861/2026-08-10/1786337756_e7932192b8c27839.png', 'uploads/settings/favicon/419185/2026-08-10/1786338297_9719c3854ef4d02f.png', 'uploads/settings/panel-logo/731156/2026-08-10/1786339225_8b6f91d8ff5ff440.png');
+INSERT INTO `settings` (`id`, `site_name`, `contact_email`, `contact_phone`, `address`, `currency`, `social_links`, `created_at`, `updated_at`, `timezone`, `site_title`, `website_logo`, `favicon`, `panel_logo`, `hero_image`, `site_tagline`, `footer_text`) VALUES
+(1, 'Tour Admin', 'admin@example.com', '+1234567890', '4/44 kadai theru rediplayam\r\nRamanathapuram Addl talk Thanjavur', 'INR', NULL, '2026-08-08 17:30:12', '2026-08-11 10:44:24', 'Asia/Kolkata', 'saran tours and travels', 'uploads/settings/logo/255861/2026-08-10/1786337756_e7932192b8c27839.png', 'uploads/settings/favicon/419185/2026-08-10/1786338297_9719c3854ef4d02f.png', 'uploads/settings/panel-logo/731156/2026-08-10/1786339225_8b6f91d8ff5ff440.png', 'uploads/settings/hero/517099/2026-08-11/1786445064_7394ade943e7b586.jpeg', NULL, '© 2024 Tour Admin. All rights reserved.');
 
 -- --------------------------------------------------------
 

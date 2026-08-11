@@ -746,7 +746,6 @@ $currencySymbol = getCurrencySymbol($currencyCode);
 
             <div class="page-header">
                 <h4><i class="bi bi-plus-circle me-2" style="color:#f5b342;"></i>Add Tour Package</h4>
-                <p>Create a new tour package with all details, itinerary, and features</p>
             </div>
 
             <div class="form-container">
