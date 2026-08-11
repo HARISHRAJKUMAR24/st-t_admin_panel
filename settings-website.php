@@ -407,13 +407,10 @@ $heroImage = $settings['hero_image'] ?? null;
         </div>
 
         <div class="page-wrapper">
-            <a href="settings.php" class="back-link">
-                <i class="bi bi-arrow-left me-1"></i> Back to Settings
-            </a>
 
             <div class="page-header">
                 <h4><i class="bi bi-globe2 me-2" style="color:#f5b342;"></i>Website Settings</h4>
-                <p>Manage your website appearance and content</p>
+                
             </div>
 
             <div class="form-container">
