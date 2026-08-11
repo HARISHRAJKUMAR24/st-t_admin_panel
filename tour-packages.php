@@ -342,7 +342,6 @@ $packages = $stmt->fetchAll();
             <div class="page-header">
                 <div>
                     <h4><i class="bi bi-suitcase me-2" style="color:#f5b342;"></i>Tour Packages</h4>
-                    <p>Manage all your tour packages</p>
                 </div>
                 <a href="add-tour-package.php" class="btn-add">
                     <i class="bi bi-plus-circle"></i> Add New

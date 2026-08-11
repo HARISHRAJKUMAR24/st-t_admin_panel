@@ -45,10 +45,9 @@ try {
     // =============================================
     foreach ($deletedProvideIcons as $iconPath) {
         if (!empty($iconPath)) {
-            // Remove APP_URL if present
             $cleanPath = str_replace(APP_URL, '', $iconPath);
             $fullPath = '../' . $cleanPath;
-            
+
             if (file_exists($fullPath)) {
                 @unlink($fullPath);
                 $dir = dirname($fullPath);
@@ -70,16 +69,16 @@ try {
     // UPLOAD NEW PROVIDE ICONS
     // =============================================
     $iconPaths = [];
-    
+
     if (isset($_FILES['provide_icons']) && !empty($_FILES['provide_icons']['name'][0])) {
         $iconFolder = createUploadFolder('../uploads', 'travel-bookings/provide-icons');
         if (!$iconFolder) {
             throw new Exception('Failed to create upload folder for icons');
         }
-        
+
         $fileCount = count($_FILES['provide_icons']['name']);
         $iconNames = $_POST['provide_icon_names'] ?? [];
-        
+
         for ($i = 0; $i < $fileCount; $i++) {
             if ($_FILES['provide_icons']['error'][$i] === UPLOAD_ERR_OK) {
                 $file = [
@@ -89,17 +88,16 @@ try {
                     'error' => $_FILES['provide_icons']['error'][$i],
                     'size' => $_FILES['provide_icons']['size'][$i]
                 ];
-                
+
                 $uploadedPath = uploadImage($file, $iconFolder);
                 if ($uploadedPath) {
-                    // Store relative path from uploads folder
                     $uploadedPath = str_replace('../', '', $uploadedPath);
                     $featureName = $iconNames[$i] ?? 'icon_' . $i;
                     $iconPaths[$featureName] = $uploadedPath;
                 }
             }
         }
-        
+
         // Update what_we_provide with icon paths
         foreach ($whatWeProvide as &$item) {
             $itemName = $item['name'] ?? '';
@@ -146,7 +144,6 @@ try {
     } else {
         throw new Exception('Failed to update booking');
     }
-
 } catch (PDOException $e) {
     error_log('Database error in update-travel-booking.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database error occurred: ' . $e->getMessage()]);
@@ -154,4 +151,3 @@ try {
     error_log('Error in update-travel-booking.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
-?>

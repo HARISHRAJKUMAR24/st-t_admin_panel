@@ -536,6 +536,11 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             background: rgba(40, 167, 69, 0.05);
         }
 
+        .distance-label {
+            background: transparent !important;
+            border: none !important;
+        }
+
         @keyframes badgeIn {
             from {
                 opacity: 0;
@@ -803,9 +808,8 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
                     <div id="map"></div>
                     <div class="map-directions-info" id="directionsInfo">
-                        <div class="distance-info">
-                            <i class="bi bi-arrow-left-right me-2"></i>
-                            <span id="distanceText">Total Distance: -- km</span>
+                        <div class="distance-info" id="stopDistancesContainer">
+                            <!-- Stop distances will be displayed here -->
                         </div>
                     </div>
 
@@ -852,6 +856,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         let deletedProvideItems = [];
         let currentIconFile = null;
         let currentIconPreview = null;
+        let routeColors = ['#f5b342', '#4CAF50', '#2196F3', '#9C27B0', '#FF5722', '#00BCD4', '#FF9800', '#8BC34A'];
 
         // =============================================
         // CAR SELECTION
@@ -1279,7 +1284,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         }
 
         // =============================================
-        // MAP
+        // MAP - INDEPENDENT STOPS WITH PER-STOP DISTANCE
         // =============================================
 
         function initMap() {
@@ -1367,7 +1372,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             });
 
             if (allCoords.length > 1) {
-                drawRoute(allCoords);
+                drawIndependentRoutes();
                 const bounds = L.latLngBounds(allCoords.map(c => [c.lat, c.lng]));
                 map.fitBounds(bounds, {
                     padding: [50, 50]
@@ -1375,6 +1380,81 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             } else if (allCoords.length === 1) {
                 map.setView([allCoords[0].lat, allCoords[0].lng], 14);
             }
+        }
+
+        function drawIndependentRoutes() {
+            const stopElements = document.querySelectorAll('.stop-card');
+            const perKmCharge = parseFloat(document.getElementById('perKmCharge').value) || 0;
+
+            // Clear previous distance info
+            const container = document.getElementById('stopDistancesContainer');
+            container.innerHTML = '';
+
+            stopElements.forEach((stopEl, index) => {
+                const stopNum = index + 1;
+                const pickupCoords = stopCoords[stopNum] ? stopCoords[stopNum].pickup : null;
+                const dropCoords = stopCoords[stopNum] ? stopCoords[stopNum].drop : null;
+
+                if (pickupCoords && dropCoords) {
+                    // Draw route
+                    const latLngs = [
+                        [pickupCoords.lat, pickupCoords.lng],
+                        [dropCoords.lat, dropCoords.lng]
+                    ];
+
+                    const d = calculateDistance(
+                        pickupCoords.lat, pickupCoords.lng,
+                        dropCoords.lat, dropCoords.lng
+                    );
+
+                    const color = routeColors[index % routeColors.length];
+
+                    L.polyline(latLngs, {
+                        color: color,
+                        weight: 3,
+                        opacity: 0.8,
+                        lineJoin: 'round'
+                    }).addTo(map);
+
+                    // Add distance label on map
+                    const midLat = (pickupCoords.lat + dropCoords.lat) / 2;
+                    const midLng = (pickupCoords.lng + dropCoords.lng) / 2;
+
+                    L.marker([midLat, midLng], {
+                        icon: L.divIcon({
+                            className: 'distance-label',
+                            html: `<span style="background:#123b4f;color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${d.toFixed(1)} km</span>`,
+                            iconSize: [60, 20],
+                            iconAnchor: [30, 10]
+                        })
+                    }).addTo(map);
+
+                    // Update stop card
+                    const distanceSpan = stopEl.querySelector('.stop-distance');
+                    const priceSpan = stopEl.querySelector('.stop-price-amount');
+                    if (distanceSpan) {
+                        distanceSpan.textContent = d.toFixed(1);
+                    }
+                    if (priceSpan) {
+                        priceSpan.textContent = '<?= htmlspecialchars($currencySymbol) ?>' + (d * perKmCharge).toFixed(2);
+                    }
+
+                    // Add per-stop distance to the info container
+                    const stopInfo = document.createElement('div');
+                    stopInfo.style.cssText = 'display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f3f7;font-size:0.8rem;';
+                    stopInfo.innerHTML = `
+                        <span>
+                            <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${color};margin-right:8px;"></span>
+                            Stop ${stopNum}
+                        </span>
+                        <span><strong>${d.toFixed(1)} km</strong> (${'<?= htmlspecialchars($currencySymbol) ?>' + (d * perKmCharge).toFixed(2)})</span>
+                    `;
+                    container.appendChild(stopInfo);
+                }
+            });
+
+            // Show the container
+            document.getElementById('directionsInfo').classList.add('show');
         }
 
         function addMarker(lat, lng, label, color) {
@@ -1388,38 +1468,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 icon: icon
             }).addTo(map);
             markers.push(marker);
-        }
-
-        function drawRoute(coords) {
-            const latLngs = coords.map(c => [c.lat, c.lng]);
-            routeLayer = L.polyline(latLngs, {
-                color: '#f5b342',
-                weight: 4,
-                opacity: 0.8,
-                lineJoin: 'round',
-                dashArray: '5, 10'
-            }).addTo(map);
-
-            let totalDistance = 0;
-            for (let i = 1; i < coords.length; i++) {
-                const d = calculateDistance(coords[i - 1].lat, coords[i - 1].lng, coords[i].lat, coords[i].lng);
-                totalDistance += d;
-            }
-
-            document.getElementById('distanceText').textContent = `Total Distance: ${totalDistance.toFixed(1)} km`;
-            document.getElementById('directionsInfo').classList.add('show');
-
-            const stopElements = document.querySelectorAll('.stop-card');
-            stopElements.forEach((stopEl, index) => {
-                const stopNum = index + 1;
-                const distanceSpan = stopEl.querySelector('.stop-distance');
-                if (distanceSpan && stopCoords[stopNum] && stopCoords[stopNum].pickup && stopCoords[stopNum].drop) {
-                    const pickup = stopCoords[stopNum].pickup;
-                    const drop = stopCoords[stopNum].drop;
-                    const d = calculateDistance(pickup.lat, pickup.lng, drop.lat, drop.lng);
-                    distanceSpan.textContent = d.toFixed(1);
-                }
-            });
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -1549,7 +1597,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                         }
                     });
 
-                    fetch('ajax/update-travel-booking.php', {
+                    fetch('ajax/edit-travel-booking.php', {
                             method: 'POST',
                             body: formData
                         })

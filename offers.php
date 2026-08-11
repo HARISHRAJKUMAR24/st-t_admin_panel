@@ -328,7 +328,6 @@ $offers = $stmt->fetchAll();
             <div class="page-header">
                 <div>
                     <h4><i class="bi bi-tags me-2" style="color:#f5b342;"></i>Offers</h4>
-                    <p>Manage all your promotional offers</p>
                 </div>
                 <a href="add-offer.php" class="btn-add">
                     <i class="bi bi-plus-circle"></i> Add New

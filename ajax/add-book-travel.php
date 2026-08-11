@@ -38,38 +38,6 @@ try {
         exit();
     }
 
-    // =============================================
-    // UPLOAD PROVIDE ICONS
-    // =============================================
-    $uploadedIcons = [];
-    if (isset($_FILES['provide_icons']) && !empty($_FILES['provide_icons']['name'][0])) {
-        $iconFolder = createUploadFolder('../uploads', 'travel-bookings/provide-icons');
-        if (!$iconFolder) {
-            throw new Exception('Failed to create upload folder for icons');
-        }
-        
-        $uploadedIcons = uploadMultipleImages($_FILES['provide_icons'], $iconFolder);
-        
-        if ($uploadedIcons) {
-            $iconNames = $_POST['provide_icon_names'] ?? [];
-            $iconPaths = [];
-            foreach ($uploadedIcons as $index => $iconPath) {
-                $iconPath = str_replace('../', '', $iconPath);
-                $featureName = $iconNames[$index] ?? 'icon_' . $index;
-                $iconPaths[$featureName] = $iconPath;
-            }
-            
-            // Update what_we_provide with icon paths
-            foreach ($whatWeProvide as &$item) {
-                $itemName = $item['name'] ?? '';
-                if (!empty($itemName) && isset($iconPaths[$itemName])) {
-                    $item['icon'] = $iconPaths[$itemName];
-                }
-            }
-            unset($item);
-        }
-    }
-
     $stmt = $pdo->prepare("INSERT INTO travel_bookings (
         user_id, car_id, car_name, car_type, seat_count, days, 
         per_day_price, per_km_charge, total_price, total_distance,
@@ -108,7 +76,7 @@ try {
 
 } catch (PDOException $e) {
     error_log('Database error in add-book-travel.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred']);
+    echo json_encode(['success' => false, 'message' => 'Database error occurred: ' . $e->getMessage()]);
 } catch (Exception $e) {
     error_log('Error in add-book-travel.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

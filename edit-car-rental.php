@@ -669,7 +669,7 @@ if (!empty($car['car_type'])) {
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn-submit" id="submitBtn">
-                        <span id="submitText"><i class="bi bi-floppy me-2"></i>Update Car</span>
+                        <span id="submitText">Update Car</span>
                         <span id="submitSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
                     </button>
                 </div>

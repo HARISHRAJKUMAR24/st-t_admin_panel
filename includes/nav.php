@@ -57,12 +57,12 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'tour-packages.php' ? 'active' : '' ?>" href="tour-packages">
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'tour-packages.php' || basename($_SERVER['PHP_SELF']) == 'add-tour-package.php' || basename($_SERVER['PHP_SELF']) == 'edit-tour-package.php' ? 'active' : '' ?>" href="tour-packages">
                 <i class="bi bi-suitcase-fill"></i> Tours
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'offers.php' ? 'active' : '' ?>" href="offers">
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'offers.php' || basename($_SERVER['PHP_SELF']) == 'add-offer.php' || basename($_SERVER['PHP_SELF']) == 'edit-offer.php' ? 'active' : '' ?>" href="offers">
                 <i class="bi bi-tag-fill"></i> Offers
             </a>
         </li>

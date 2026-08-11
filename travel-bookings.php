@@ -356,7 +356,6 @@ $bookings = $stmt->fetchAll();
             <div class="page-header">
                 <div>
                     <h4><i class="bi bi-car-front me-2" style="color:#f5b342;"></i>Travel Bookings</h4>
-                    <p>Manage all travel bookings</p>
                 </div>
                 <a href="add-travel-booking.php" class="btn-add">
                     <i class="bi bi-plus-circle"></i> Add New
@@ -368,9 +367,7 @@ $bookings = $stmt->fetchAll();
                     <i class="bi bi-car-front"></i>
                     <h5>No Bookings Yet</h5>
                     <p>Create your first travel booking to get started.</p>
-                    <a href="add-travel-booking.php" class="btn-add-empty">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Booking
-                    </a>
+                   
                 </div>
             <?php else: ?>
                 <div class="row g-3">
