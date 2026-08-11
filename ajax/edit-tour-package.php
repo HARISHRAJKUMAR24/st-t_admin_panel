@@ -1,8 +1,4 @@
 <?php
-// =============================================
-// EDIT TOUR PACKAGE - AJAX HANDLER
-// =============================================
-
 error_reporting(0);
 ini_set('display_errors', 0);
 
@@ -24,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Get form data
     $id = intval($_POST['id'] ?? 0);
     $packageName = trim($_POST['package_name'] ?? '');
     $packageType = trim($_POST['package_type'] ?? '');
@@ -40,7 +35,6 @@ try {
     $deletedGalleryImages = json_decode($_POST['deleted_gallery_images'] ?? '[]', true);
     $deleteMainImage = intval($_POST['delete_main_image'] ?? 0);
 
-    // Validate
     if ($id <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid package ID']);
         exit();
@@ -66,20 +60,9 @@ try {
         exit();
     }
 
-    // Extract members counts
-    $adults = 0;
-    $children = 0;
-    $infants = 0;
-    foreach ($members as $member) {
-        $label = strtolower($member['label'] ?? '');
-        $count = intval($member['count'] ?? 0);
-        if ($label === 'adults' || $label === 'adult') {
-            $adults = $count;
-        } elseif ($label === 'children' || $label === 'child') {
-            $children = $count;
-        } elseif ($label === 'infants' || $label === 'infant') {
-            $infants = $count;
-        }
+    if (empty($members)) {
+        echo json_encode(['success' => false, 'message' => 'At least one member type is required']);
+        exit();
     }
 
     // Start transaction
@@ -101,11 +84,9 @@ try {
     $mainImagePath = $existingPackage['main_image'];
 
     if ($deleteMainImage == 1 && $mainImagePath) {
-        // Delete main image file
         $oldPath = '../' . $mainImagePath;
         if (file_exists($oldPath)) {
             @unlink($oldPath);
-            // Try to delete empty folders
             $dir = dirname($oldPath);
             if (is_dir($dir) && count(scandir($dir)) <= 2) {
                 @rmdir($dir);
@@ -118,9 +99,7 @@ try {
         $mainImagePath = null;
     }
 
-    // Upload new main image if provided
     if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
-        // Delete old main image if exists
         if ($mainImagePath && $deleteMainImage != 1) {
             $oldPath = '../' . $mainImagePath;
             if (file_exists($oldPath)) {
@@ -135,7 +114,6 @@ try {
                 }
             }
         }
-
         $uploadFolder = createUploadFolder('../uploads', 'tour-packages/main');
         if (!$uploadFolder) {
             throw new Exception('Failed to create upload folder for main image');
@@ -152,7 +130,6 @@ try {
     // =============================================
     $galleryImages = json_decode($existingPackage['gallery_images'], true) ?: [];
 
-    // Delete removed gallery images
     foreach ($deletedGalleryImages as $imgPath) {
         $key = array_search($imgPath, $galleryImages);
         if ($key !== false) {
@@ -173,7 +150,6 @@ try {
     }
     $galleryImages = array_values($galleryImages);
 
-    // Upload new gallery images
     if (isset($_FILES['gallery_images']) && !empty($_FILES['gallery_images']['name'][0])) {
         $galleryFolder = createUploadFolder('../uploads', 'tour-packages/gallery');
         if (!$galleryFolder) {
@@ -192,29 +168,29 @@ try {
     // =============================================
     $featureIcons = [];
 
-    // Delete removed feature icons
     foreach ($deletedFeatures as $iconPath) {
-        $fullPath = '../' . $iconPath;
-        if (file_exists($fullPath)) {
-            @unlink($fullPath);
-            $dir = dirname($fullPath);
-            if (is_dir($dir) && count(scandir($dir)) <= 2) {
-                @rmdir($dir);
-                $parentDir = dirname($dir);
-                if (is_dir($parentDir) && count(scandir($parentDir)) <= 2) {
-                    @rmdir($parentDir);
+        if (!empty($iconPath)) {
+            $fullPath = '../' . $iconPath;
+            if (file_exists($fullPath)) {
+                @unlink($fullPath);
+                $dir = dirname($fullPath);
+                if (is_dir($dir) && count(scandir($dir)) <= 2) {
+                    @rmdir($dir);
+                    $parentDir = dirname($dir);
+                    if (is_dir($parentDir) && count(scandir($parentDir)) <= 2) {
+                        @rmdir($parentDir);
+                    }
                 }
             }
         }
     }
 
-    // Upload new feature icons
     if (isset($_FILES['feature_icons']) && !empty($_FILES['feature_icons']['name'][0])) {
         $featureIconFolder = createUploadFolder('../uploads', 'tour-packages/features');
         if (!$featureIconFolder) {
             throw new Exception('Failed to create feature icons folder');
         }
-
+        
         $uploadedIcons = uploadMultipleImages($_FILES['feature_icons'], $featureIconFolder);
         if ($uploadedIcons) {
             $iconNames = $_POST['feature_icon_names'] ?? [];
@@ -226,7 +202,7 @@ try {
         }
     }
 
-    // Update features with icon paths (preserve existing icons if not deleted)
+    // Update features with icon paths
     foreach ($features as &$feature) {
         $featureName = $feature['name'] ?? '';
         if (!empty($featureName) && isset($featureIcons[$featureName])) {
@@ -242,12 +218,12 @@ try {
     // =============================================
     $stmt = $pdo->prepare("UPDATE tour_packages SET 
         package_name = ?, package_type = ?, days_count = ?, 
-        adults = ?, children = ?, infants = ?,
-        price = ?, status = ?, short_description = ?, 
-        description = ?, itinerary = ?, features = ?, 
-        main_image = ?, gallery_images = ?
+        members = ?, price = ?, status = ?, 
+        short_description = ?, description = ?, 
+        itinerary = ?, features = ?, main_image = ?, gallery_images = ?
         WHERE id = ?");
 
+    $membersJson = json_encode($members, JSON_UNESCAPED_SLASHES);
     $itineraryJson = !empty($itinerary) ? json_encode($itinerary, JSON_UNESCAPED_SLASHES) : null;
     $featuresJson = !empty($features) ? json_encode($features, JSON_UNESCAPED_SLASHES) : null;
     $galleryJson = !empty($galleryImages) ? json_encode($galleryImages, JSON_UNESCAPED_SLASHES) : null;
@@ -256,9 +232,7 @@ try {
         $packageName,
         $packageType,
         $daysCount,
-        $adults,
-        $children,
-        $infants,
+        $membersJson,
         $price,
         $status,
         $shortDescription,
@@ -270,13 +244,13 @@ try {
         $id
     ]);
 
-    // Commit transaction
     $pdo->commit();
 
     echo json_encode([
         'success' => true,
         'message' => 'Tour package updated successfully!'
     ]);
+
 } catch (PDOException $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
@@ -290,3 +264,4 @@ try {
     error_log('Error in edit-tour-package.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
+?>

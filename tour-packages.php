@@ -104,7 +104,7 @@ $packages = $stmt->fetchAll();
         .package-card .package-image img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
         }
 
         .package-card .package-id {
@@ -250,6 +250,24 @@ $packages = $stmt->fetchAll();
             vertical-align: middle;
         }
 
+        .member-tag {
+            display: inline-block;
+            background: rgba(18, 59, 79, 0.08);
+            color: #123b4f;
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.55rem;
+            margin: 1px;
+            font-weight: 600;
+        }
+
+        .member-tag .member-count {
+            background: rgba(255, 215, 100, 0.3);
+            padding: 0 4px;
+            border-radius: 8px;
+            margin-left: 2px;
+        }
+
         .empty-state {
             text-align: center;
             padding: 3rem 1.5rem;
@@ -342,6 +360,7 @@ $packages = $stmt->fetchAll();
             <div class="page-header">
                 <div>
                     <h4><i class="bi bi-suitcase me-2" style="color:#f5b342;"></i>Tour Packages</h4>
+                    <p>Manage your tour packages</p>
                 </div>
                 <a href="add-tour-package.php" class="btn-add">
                     <i class="bi bi-plus-circle"></i> Add New
@@ -361,8 +380,10 @@ $packages = $stmt->fetchAll();
                 <div class="row g-3">
                     <?php foreach ($packages as $package): ?>
                         <?php
+                        // Decode JSON data
                         $gallery = json_decode($package['gallery_images'], true) ?: [];
                         $features = json_decode($package['features'], true) ?: [];
+                        $members = json_decode($package['members'], true) ?: [];
                         ?>
                         <div class="col-md-6 col-lg-4 col-xl-3">
                             <div class="package-card">
@@ -379,32 +400,41 @@ $packages = $stmt->fetchAll();
 
                                 <div class="package-meta">
                                     <span class="badge-days"><i class="bi bi-calendar3 me-1"></i><?= $package['days_count'] ?> Days</span>
-                                    <?php if ($package['adults'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['adults'] ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($package['children'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['children'] ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($package['infants'] > 0): ?>
-                                        <span class="badge-custom"><i class="bi bi-person me-1"></i><?= $package['infants'] ?></span>
-                                    <?php endif; ?>
+                                    
+                                    <!-- Display members from JSON -->
+                                    <?php foreach ($members as $member): ?>
+                                        <span class="member-tag">
+                                            <?= htmlspecialchars($member['label']) ?>
+                                            <span class="member-count"><?= $member['count'] ?></span>
+                                        </span>
+                                    <?php endforeach; ?>
+                                    
                                     <span class="badge-status <?= $package['status'] ?>"><?= ucfirst($package['status']) ?></span>
                                 </div>
 
                                 <?php if (!empty($features)): ?>
                                     <div style="margin: 0.3rem 0;">
-                                        <?php foreach (array_slice($features, 0, 2) as $feature): ?>
+                                        <?php foreach (array_slice($features, 0, 3) as $feature): ?>
                                             <span class="feature-tag">
                                                 <?php if (!empty($feature['icon'])): ?>
-                                                    <img src="<?= APP_URL . $feature['icon'] ?>" alt="">
+                                                    <?php 
+                                                    // Check if icon is a URL or local path
+                                                    $iconPath = $feature['icon'];
+                                                    if (strpos($iconPath, 'http') !== 0 && strpos($iconPath, 'uploads/') !== 0) {
+                                                        $iconPath = APP_URL . $iconPath;
+                                                    } elseif (strpos($iconPath, 'http') !== 0) {
+                                                        $iconPath = APP_URL . $iconPath;
+                                                    }
+                                                    ?>
+                                                    <img src="<?= htmlspecialchars($iconPath) ?>" alt="">
                                                 <?php else: ?>
                                                     <i class="bi bi-check-circle-fill" style="font-size:0.5rem;"></i>
                                                 <?php endif; ?>
                                                 <?= htmlspecialchars($feature['name']) ?>
                                             </span>
                                         <?php endforeach; ?>
-                                        <?php if (count($features) > 2): ?>
-                                            <span class="feature-tag">+<?= count($features) - 2 ?></span>
+                                        <?php if (count($features) > 3): ?>
+                                            <span class="feature-tag">+<?= count($features) - 3 ?></span>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>

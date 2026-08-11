@@ -9,7 +9,7 @@ if (!verifyToken($pdo)) {
     exit();
 }
 
-// Get package ID from URL (using package_id instead of id)
+// Get package ID from URL
 $packageIdCode = isset($_GET['package_id']) ? trim($_GET['package_id']) : '';
 
 if (empty($packageIdCode)) {
@@ -41,18 +41,7 @@ $currencySymbol = getCurrencySymbol($currencyCode);
 $itinerary = json_decode($package['itinerary'], true) ?: [];
 $features = json_decode($package['features'], true) ?: [];
 $galleryImages = json_decode($package['gallery_images'], true) ?: [];
-
-// Extract members
-$members = [];
-if ($package['adults'] > 0) {
-    $members[] = ['label' => 'Adults', 'count' => $package['adults']];
-}
-if ($package['children'] > 0) {
-    $members[] = ['label' => 'Children', 'count' => $package['children']];
-}
-if ($package['infants'] > 0) {
-    $members[] = ['label' => 'Infants', 'count' => $package['infants']];
-}
+$members = json_decode($package['members'], true) ?: [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -273,7 +262,7 @@ if ($package['infants'] > 0) {
         }
 
         /* ============================================
-           IMAGE UPLOAD & PREVIEW
+           IMAGE UPLOAD & CURRENT IMAGES
            ============================================ */
         .image-upload-wrapper {
             display: flex;
@@ -717,7 +706,6 @@ if ($package['infants'] > 0) {
                 opacity: 0;
                 transform: scale(0.8);
             }
-
             to {
                 opacity: 1;
                 transform: scale(1);
@@ -729,7 +717,6 @@ if ($package['infants'] > 0) {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -793,11 +780,6 @@ if ($package['infants'] > 0) {
                 width: 100%;
                 justify-content: center;
             }
-
-            .current-image-item {
-                width: 80px;
-                height: 70px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -843,11 +825,13 @@ if ($package['infants'] > 0) {
         </div>
 
         <div class="page-wrapper">
-           
+            <a href="tour-packages.php" class="back-link">
+                <i class="bi bi-arrow-left me-1"></i> Back to Packages
+            </a>
 
             <div class="page-header">
                 <h4><i class="bi bi-pencil-square me-2" style="color:#f5b342;"></i>Edit Tour Package</h4>
-                <p>Update package details - <?= htmlspecialchars($package['package_id']) ?></p>
+                <p>Update package - <?= htmlspecialchars($package['package_id']) ?></p>
             </div>
 
             <div class="form-container">
@@ -875,13 +859,13 @@ if ($package['infants'] > 0) {
                                 <option value="">Select Type</option>
                                 <option value="Adventure" <?= $package['package_type'] == 'Adventure' ? 'selected' : '' ?>>🏔️ Adventure</option>
                                 <option value="Beach" <?= $package['package_type'] == 'Beach' ? 'selected' : '' ?>>🏖️ Beach</option>
-                                <option value="Cultural" <?= $package['package_type'] == 'Cultural' ? 'selected' : '' ?>>🏛️ Cultural</option>
-                                <option value="Wildlife" <?= $package['package_type'] == 'Wildlife' ? 'selected' : '' ?>>🦁 Wildlife</option>
                                 <option value="City Break" <?= $package['package_type'] == 'City Break' ? 'selected' : '' ?>>🏙️ City Break</option>
-                                <option value="Luxury" <?= $package['package_type'] == 'Luxury' ? 'selected' : '' ?>>✨ Luxury</option>
+                                <option value="Cultural" <?= $package['package_type'] == 'Cultural' ? 'selected' : '' ?>>🏛️ Cultural</option>
                                 <option value="Family" <?= $package['package_type'] == 'Family' ? 'selected' : '' ?>>👨‍👩‍👧‍👦 Family</option>
-                                <option value="Honeymoon" <?= $package['package_type'] == 'Honeymoon' ? 'selected' : '' ?>>❤️ Honeymoon</option>
                                 <option value="Group" <?= $package['package_type'] == 'Group' ? 'selected' : '' ?>>👥 Group</option>
+                                <option value="Honeymoon" <?= $package['package_type'] == 'Honeymoon' ? 'selected' : '' ?>>❤️ Honeymoon</option>
+                                <option value="Luxury" <?= $package['package_type'] == 'Luxury' ? 'selected' : '' ?>>✨ Luxury</option>
+                                <option value="Wildlife" <?= $package['package_type'] == 'Wildlife' ? 'selected' : '' ?>>🦁 Wildlife</option>
                             </select>
                         </div>
                     </div>
@@ -903,13 +887,23 @@ if ($package['infants'] > 0) {
                             <div class="badge-input-wrapper">
                                 <div class="badge-input-row">
                                     <input type="text" class="form-control" id="memberLabel" placeholder="e.g., Adults, Children, Seniors">
-                                    <input type="number" class="form-control" id="memberCount" placeholder="Count" min="0" value="0" style="max-width:120px;">
+                                    <input type="number" class="form-control" id="memberCount" placeholder="Count" min="1" value="1" style="max-width:120px;">
                                     <button type="button" class="btn-sm-primary" onclick="addMember()">
                                         <i class="bi bi-plus-circle"></i> Add
                                     </button>
                                 </div>
                                 <div class="badges-container" id="membersList">
-                                    <!-- Members will be rendered by JS -->
+                                    <?php if (empty($members)): ?>
+                                        <div class="empty-badges">No members added yet</div>
+                                    <?php else: ?>
+                                        <?php foreach ($members as $index => $member): ?>
+                                            <span class="member-badge" data-member-index="<?= $index ?>">
+                                                <span class="member-label"><?= htmlspecialchars($member['label']) ?></span>
+                                                <span class="member-count"><?= $member['count'] ?></span>
+                                                <span class="remove-badge" onclick="removeMember(<?= $index ?>)">&times;</span>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </div>
                                 <input type="hidden" id="members" name="members" value="">
                                 <small class="text-muted" style="font-size:0.7rem;">Enter member type and count, then click Add</small>
@@ -918,7 +912,7 @@ if ($package['infants'] > 0) {
                     </div>
 
                     <!-- ==========================================
-                    PRICE
+                    PRICE (Single Price Only)
                     ========================================== -->
                     <div class="section-title">
                         <i class="bi bi-tag" style="color:#f5b342;"></i> Pricing
@@ -977,10 +971,10 @@ if ($package['infants'] > 0) {
 
                     <div id="itineraryContainer" class="mb-3">
                         <?php foreach ($itinerary as $day => $data): ?>
-                            <?php
-                            $dayNumber = str_replace('day', '', $day);
-                            $title = $data['title'] ?? '';
-                            $description = $data['description'] ?? '';
+                            <?php 
+                                $dayNumber = str_replace('day', '', $day);
+                                $title = $data['title'] ?? '';
+                                $description = $data['description'] ?? '';
                             ?>
                             <div class="itinerary-day" id="day-<?= $dayNumber ?>">
                                 <div class="day-header">
@@ -1017,6 +1011,7 @@ if ($package['infants'] > 0) {
                             <div class="badge-input-row">
                                 <input type="text" class="form-control" id="featureInput" placeholder="Enter feature name" style="flex:1;">
 
+                                <!-- Feature Icon Upload -->
                                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                                     <label for="featureIcon" class="feature-icon-upload-box" id="featureIconBox">
                                         <i class="bi bi-image" style="font-size:1rem;color:#9bb2c5;"></i>
@@ -1029,6 +1024,7 @@ if ($package['infants'] > 0) {
                                 </div>
                             </div>
 
+                            <!-- Feature Icon Preview -->
                             <div id="featureIconPreview" class="mt-2" style="display:none;">
                                 <span style="background:rgba(40,167,69,0.1);color:#28a745;padding:0.2rem 0.8rem;border-radius:12px;font-size:0.75rem;display:inline-flex;align-items:center;gap:6px;">
                                     <img id="featureIconPreviewImg" src="" style="width:18px;height:18px;object-fit:contain;border-radius:4px;">
@@ -1044,7 +1040,15 @@ if ($package['infants'] > 0) {
                                     <?php foreach ($features as $index => $feature): ?>
                                         <span class="badge-item" data-feature-index="<?= $index ?>">
                                             <?php if (!empty($feature['icon'])): ?>
-                                                <img src="<?= APP_URL . $feature['icon'] ?>" class="badge-icon" alt="icon">
+                                                <?php 
+                                                $iconPath = $feature['icon'];
+                                                if (strpos($iconPath, 'http') !== 0 && strpos($iconPath, 'uploads/') !== 0) {
+                                                    $iconPath = APP_URL . $iconPath;
+                                                } elseif (strpos($iconPath, 'http') !== 0) {
+                                                    $iconPath = APP_URL . $iconPath;
+                                                }
+                                                ?>
+                                                <img src="<?= htmlspecialchars($iconPath) ?>" class="badge-icon" alt="icon">
                                             <?php endif; ?>
                                             <span class="badge-name"><?= htmlspecialchars($feature['name']) ?></span>
                                             <span class="remove-badge" onclick="removeFeature(<?= $index ?>)">&times;</span>
@@ -1148,7 +1152,822 @@ if ($package['infants'] > 0) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
     </script>
     <script src="<?= APP_URL ?>javascript/main.js"></script>
-    <script src="<?= APP_URL ?>javascript/edit-tour-package.js"></script>
+    <script>
+        // =============================================
+// EDIT TOUR PACKAGE - JAVASCRIPT
+// =============================================
+
+let features = [];
+let members = [];
+let featureIconFile = null;
+let featureIconPreviewData = null;
+let deletedGalleryImages = [];
+let deletedFeatureIcons = [];
+
+// =============================================
+// INITIALIZE
+// =============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load existing features
+    loadExistingFeatures();
+    
+    // Load existing members
+    loadExistingMembers();
+
+    // Setup image uploads
+    setupImageUpload('mainImage', 'mainImagePreview', 'mainImageBox', true);
+    setupGalleryUpload('galleryImages', 'galleryImagesPreview', 'galleryImagesBox');
+    setupFeatureIconUpload();
+
+    // Update counts
+    updateDayCount();
+    updateFeatureCount();
+});
+
+// =============================================
+// LOAD EXISTING FEATURES
+// =============================================
+
+function loadExistingFeatures() {
+    const container = document.getElementById('featuresContainer');
+    const items = container.querySelectorAll('.badge-item');
+    
+    features = [];
+    items.forEach((item) => {
+        const nameSpan = item.querySelector('.badge-name');
+        const iconImg = item.querySelector('.badge-icon');
+        const name = nameSpan ? nameSpan.textContent : '';
+        const icon = iconImg ? iconImg.getAttribute('src') : null;
+        
+        if (name) {
+            // Clean icon path
+            let cleanIcon = icon;
+            if (cleanIcon) {
+                cleanIcon = cleanIcon.replace('<?= APP_URL ?>', '');
+                if (!cleanIcon.startsWith('uploads/') && !cleanIcon.startsWith('http')) {
+                    cleanIcon = 'uploads/' + cleanIcon;
+                }
+            }
+            
+            features.push({
+                name: name,
+                icon: cleanIcon,
+                iconFile: null,
+                iconPreview: null
+            });
+        }
+    });
+    
+    // Clear HTML features (will be re-rendered by JS)
+    container.innerHTML = '';
+    renderFeatures();
+}
+
+// =============================================
+// LOAD EXISTING MEMBERS
+// =============================================
+
+function loadExistingMembers() {
+    const container = document.getElementById('membersList');
+    const items = container.querySelectorAll('.member-badge');
+    
+    members = [];
+    items.forEach((item) => {
+        const labelSpan = item.querySelector('.member-label');
+        const countSpan = item.querySelector('.member-count');
+        const label = labelSpan ? labelSpan.textContent : '';
+        const count = countSpan ? parseInt(countSpan.textContent) : 0;
+        
+        if (label) {
+            members.push({ label: label, count: count });
+        }
+    });
+    
+    // Clear HTML members (will be re-rendered by JS)
+    container.innerHTML = '';
+    renderMembers();
+    updateMemberCount();
+}
+
+// =============================================
+// MEMBERS (Badge Style)
+// =============================================
+
+function addMember(label = '', count = null) {
+    const labelInput = document.getElementById('memberLabel');
+    const countInput = document.getElementById('memberCount');
+
+    let memberLabel = label || labelInput.value.trim();
+    let memberCount;
+    
+    if (count !== null) {
+        memberCount = parseInt(count);
+    } else {
+        memberCount = parseInt(countInput.value);
+    }
+    
+    if (isNaN(memberCount) || memberCount < 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Count',
+            text: 'Please enter a count greater than 0',
+            confirmButtonColor: '#123b4f'
+        });
+        countInput.focus();
+        return;
+    }
+
+    if (!memberLabel) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Member Type Required',
+            text: 'Please enter a member type (e.g., Adults, Children)',
+            confirmButtonColor: '#123b4f'
+        });
+        labelInput.focus();
+        return;
+    }
+
+    const existing = members.find(m => m.label.toLowerCase() === memberLabel.toLowerCase());
+    if (existing) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Duplicate Member Type',
+            text: `"${memberLabel}" already exists. Please use a different name.`,
+            confirmButtonColor: '#123b4f'
+        });
+        labelInput.focus();
+        return;
+    }
+
+    members.push({
+        label: memberLabel,
+        count: memberCount
+    });
+
+    renderMembers();
+    updateMemberCount();
+
+    labelInput.value = '';
+    countInput.value = '1';
+    labelInput.focus();
+}
+
+function removeMember(index) {
+    members.splice(index, 1);
+    renderMembers();
+    updateMemberCount();
+}
+
+function renderMembers() {
+    const container = document.getElementById('membersList');
+    container.innerHTML = '';
+
+    if (members.length === 0) {
+        container.innerHTML = '<div class="empty-badges">No members added yet</div>';
+        return;
+    }
+
+    members.forEach((member, index) => {
+        const badge = document.createElement('span');
+        badge.className = 'member-badge';
+        badge.innerHTML = `
+            <span class="member-label">${escapeHtml(member.label)}</span>
+            <span class="member-count">${member.count}</span>
+            <span class="remove-badge" onclick="removeMember(${index})">&times;</span>
+        `;
+        container.appendChild(badge);
+    });
+
+    document.getElementById('members').value = JSON.stringify(members);
+}
+
+function updateMemberCount() {
+    const totalMembers = members.reduce((sum, m) => sum + m.count, 0);
+    const types = members.length;
+}
+
+// =============================================
+// IMAGE UPLOAD
+// =============================================
+
+function setupImageUpload(inputId, previewId, boxId, isSingle) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById(boxId);
+    const preview = document.getElementById(previewId);
+
+    if (box) {
+        box.addEventListener('click', function() {
+            input.click();
+        });
+    }
+
+    if (input) {
+        input.addEventListener('change', function(e) {
+            const files = e.target.files;
+            preview.innerHTML = '';
+
+            if (files.length > 0) {
+                const file = files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    div.appendChild(img);
+
+                    if (!isSingle) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-image';
+                        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                        removeBtn.onclick = function(e) {
+                            e.stopPropagation();
+                            div.remove();
+                            const dt = new DataTransfer();
+                            for (let f of input.files) {
+                                if (f.name !== file.name) {
+                                    dt.items.add(f);
+                                }
+                            }
+                            input.files = dt.files;
+                            if (preview.children.length === 0) {
+                                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
+                            }
+                        };
+                        div.appendChild(removeBtn);
+                    }
+                    preview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '<div class="image-preview-empty">No new image selected</div>';
+            }
+        });
+    }
+}
+
+function setupGalleryUpload(inputId, previewId, boxId) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById(boxId);
+    const preview = document.getElementById(previewId);
+
+    if (box) {
+        box.addEventListener('click', function() {
+            input.click();
+        });
+    }
+
+    if (input) {
+        input.addEventListener('change', function(e) {
+            const files = e.target.files;
+            preview.innerHTML = '';
+
+            if (files.length === 0) {
+                preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = file.name;
+                    div.appendChild(img);
+
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-image';
+                    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                    removeBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        div.remove();
+                        const dt = new DataTransfer();
+                        for (let f of input.files) {
+                            if (f.name !== file.name) {
+                                dt.items.add(f);
+                            }
+                        }
+                        input.files = dt.files;
+                        if (preview.children.length === 0) {
+                            preview.innerHTML = '<div class="image-preview-empty">No new images selected</div>';
+                        }
+                    };
+                    div.appendChild(removeBtn);
+                    preview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+// =============================================
+// DELETE IMAGE FUNCTIONS
+// =============================================
+
+function deleteMainImage() {
+    const imgWrapper = document.querySelector('.current-image-item');
+    if (imgWrapper) {
+        imgWrapper.remove();
+    }
+    document.getElementById('deleteMainImage').value = '1';
+}
+
+function deleteGalleryImage(index, imagePath) {
+    const imgItem = document.querySelector(`.current-image-item[data-gallery-index="${index}"]`);
+    if (imgItem) {
+        imgItem.remove();
+    }
+    
+    deletedGalleryImages.push(imagePath);
+    document.getElementById('deletedGalleryImages').value = JSON.stringify(deletedGalleryImages);
+}
+
+// =============================================
+// FEATURE ICON UPLOAD
+// =============================================
+
+function setupFeatureIconUpload() {
+    const input = document.getElementById('featureIcon');
+    const box = document.getElementById('featureIconBox');
+
+    if (input) {
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 1 * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: 'Icon file must be less than 1MB',
+                        confirmButtonColor: '#123b4f'
+                    });
+                    this.value = '';
+                    return;
+                }
+
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/x-icon'];
+                if (!allowedTypes.includes(file.type)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid File Type',
+                        text: 'Please upload JPG, PNG, GIF, WebP, SVG, or ICO files only',
+                        confirmButtonColor: '#123b4f'
+                    });
+                    this.value = '';
+                    return;
+                }
+
+                featureIconFile = file;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    featureIconPreviewData = e.target.result;
+                    const previewDiv = document.getElementById('featureIconPreview');
+                    const previewImg = document.getElementById('featureIconPreviewImg');
+                    const previewName = document.getElementById('featureIconPreviewName');
+
+                    if (previewImg) previewImg.src = e.target.result;
+                    if (previewName) previewName.textContent = file.name;
+                    if (previewDiv) previewDiv.style.display = 'block';
+
+                    const boxElement = document.getElementById('featureIconBox');
+                    const labelSpan = document.getElementById('featureIconLabel');
+                    const icon = boxElement.querySelector('i');
+                    
+                    if (boxElement) {
+                        boxElement.classList.add('has-file');
+                        if (icon) icon.style.color = '#28a745';
+                        if (labelSpan) {
+                            labelSpan.textContent = '✓ ' + file.name.substring(0, 15) + (file.name.length > 15 ? '...' : '');
+                            labelSpan.style.color = '#28a745';
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+function removeFeatureIconPreview() {
+    featureIconFile = null;
+    featureIconPreviewData = null;
+    document.getElementById('featureIcon').value = '';
+    document.getElementById('featureIconPreview').style.display = 'none';
+
+    const boxElement = document.getElementById('featureIconBox');
+    const labelSpan = document.getElementById('featureIconLabel');
+    const icon = boxElement.querySelector('i');
+    
+    if (boxElement) {
+        boxElement.classList.remove('has-file');
+        if (icon) icon.style.color = '#9bb2c5';
+        if (labelSpan) {
+            labelSpan.textContent = 'Upload Icon';
+            labelSpan.style.color = '#5f7d92';
+        }
+    }
+}
+
+// =============================================
+// ITINERARY
+// =============================================
+
+function addDay() {
+    const container = document.getElementById('itineraryContainer');
+    const dayNumber = container.children.length + 1;
+
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'itinerary-day';
+    dayDiv.id = 'day-' + dayNumber;
+    dayDiv.innerHTML = `
+        <div class="day-header">
+            <span class="day-label">
+                <span class="day-number">${dayNumber}</span>
+                Day ${dayNumber}
+            </span>
+            <button type="button" class="remove-day" onclick="removeDay('${dayDiv.id}')">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
+        <div class="day-title-input">
+            <input type="text" class="form-control" id="day_title_${dayNumber}" placeholder="Enter day title (e.g., Arrival & Welcome)" style="font-weight:600;color:#123b4f;">
+        </div>
+        <textarea class="form-control" id="itinerary_${dayNumber}" rows="2" placeholder="Enter description for Day ${dayNumber}"></textarea>
+    `;
+    container.appendChild(dayDiv);
+
+    updateDayCount();
+}
+
+function removeDay(dayId) {
+    const day = document.getElementById(dayId);
+    if (day && document.getElementById('itineraryContainer').children.length > 1) {
+        day.remove();
+        renumberDays();
+        updateDayCount();
+    } else {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cannot Remove',
+            text: 'You need at least one day in the itinerary',
+            confirmButtonColor: '#123b4f'
+        });
+    }
+}
+
+function renumberDays() {
+    const container = document.getElementById('itineraryContainer');
+    const days = container.children;
+    for (let i = 0; i < days.length; i++) {
+        const day = days[i];
+        const dayNumber = i + 1;
+        day.id = 'day-' + dayNumber;
+        const numberSpan = day.querySelector('.day-number');
+        if (numberSpan) {
+            numberSpan.textContent = dayNumber;
+        }
+        const label = day.querySelector('.day-label');
+        if (label) {
+            label.innerHTML = `
+                <span class="day-number">${dayNumber}</span>
+                Day ${dayNumber}
+            `;
+        }
+        const titleInput = day.querySelector('.day-title-input input');
+        if (titleInput) {
+            titleInput.id = 'day_title_' + dayNumber;
+            titleInput.placeholder = 'Enter day title (e.g., Arrival & Welcome)';
+        }
+        const textarea = day.querySelector('textarea');
+        if (textarea) {
+            textarea.id = 'itinerary_' + dayNumber;
+            textarea.placeholder = `Enter description for Day ${dayNumber}`;
+        }
+    }
+}
+
+function updateDayCount() {
+    const count = document.getElementById('itineraryContainer').children.length;
+    document.getElementById('dayCount').textContent = count + ' Day' + (count > 1 ? 's' : '');
+}
+
+// =============================================
+// FEATURES
+// =============================================
+
+function addFeature() {
+    const input = document.getElementById('featureInput');
+    const name = input.value.trim();
+
+    if (!name) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Feature Name Required',
+            text: 'Please enter a feature name',
+            confirmButtonColor: '#123b4f'
+        });
+        input.focus();
+        return;
+    }
+
+    const existing = features.find(f => f.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Duplicate Feature',
+            text: `"${name}" already exists in the features list`,
+            confirmButtonColor: '#123b4f'
+        });
+        input.focus();
+        return;
+    }
+
+    const feature = {
+        name: name,
+        icon: featureIconFile ? featureIconFile.name : null,
+        iconFile: featureIconFile,
+        iconPreview: featureIconPreviewData
+    };
+
+    features.push(feature);
+    renderFeatures();
+
+    input.value = '';
+    featureIconFile = null;
+    featureIconPreviewData = null;
+    document.getElementById('featureIcon').value = '';
+    document.getElementById('featureIconPreview').style.display = 'none';
+
+    const boxElement = document.getElementById('featureIconBox');
+    const labelSpan = document.getElementById('featureIconLabel');
+    const icon = boxElement.querySelector('i');
+    
+    if (boxElement) {
+        boxElement.classList.remove('has-file');
+        if (icon) icon.style.color = '#9bb2c5';
+        if (labelSpan) {
+            labelSpan.textContent = 'Upload Icon';
+            labelSpan.style.color = '#5f7d92';
+        }
+    }
+
+    updateFeatureCount();
+}
+
+function removeFeature(index) {
+    const feature = features[index];
+    if (feature && feature.icon && !feature.iconPreview) {
+        deletedFeatureIcons.push(feature.icon);
+    }
+    features.splice(index, 1);
+    renderFeatures();
+    updateFeatureCount();
+}
+
+function renderFeatures() {
+    const container = document.getElementById('featuresContainer');
+    container.innerHTML = '';
+
+    if (features.length === 0) {
+        container.innerHTML = '<div class="empty-badges">No features added yet</div>';
+        return;
+    }
+
+    features.forEach((feature, index) => {
+        const badge = document.createElement('span');
+        badge.className = 'badge-item';
+
+        let iconHtml = '';
+        if (feature.iconPreview) {
+            iconHtml = `<img src="${feature.iconPreview}" class="badge-icon" alt="icon">`;
+        } else if (feature.icon && typeof feature.icon === 'string') {
+            let iconSrc = feature.icon;
+            if (!iconSrc.startsWith('http://') && !iconSrc.startsWith('https://')) {
+                if (iconSrc.startsWith('uploads/')) {
+                    iconSrc = '<?= APP_URL ?>' + iconSrc;
+                } else {
+                    iconSrc = '<?= APP_URL ?>uploads/' + iconSrc.replace(/^uploads\//, '');
+                }
+            }
+            iconHtml = `<img src="${iconSrc}" class="badge-icon" alt="icon">`;
+        }
+
+        badge.innerHTML = `
+            ${iconHtml}
+            <span class="badge-name">${escapeHtml(feature.name)}</span>
+            <span class="remove-badge" onclick="removeFeature(${index})">&times;</span>
+        `;
+        container.appendChild(badge);
+    });
+}
+
+function updateFeatureCount() {
+    const count = features.length;
+    document.getElementById('featureCount').textContent = count + ' Feature' + (count > 1 ? 's' : '');
+}
+
+// =============================================
+// UTILITY FUNCTIONS
+// =============================================
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// =============================================
+// FORM SUBMISSION
+// =============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('tourPackageForm');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const packageName = document.getElementById('packageName').value.trim();
+            const daysCount = document.getElementById('daysCount').value;
+            const price = document.getElementById('price').value;
+            const shortDescription = document.getElementById('shortDescription').value.trim();
+
+            if (!packageName) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Package name is required',
+                    confirmButtonColor: '#123b4f'
+                });
+                document.getElementById('packageName').focus();
+                return;
+            }
+
+            if (!daysCount || daysCount < 1) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please enter valid number of days',
+                    confirmButtonColor: '#123b4f'
+                });
+                document.getElementById('daysCount').focus();
+                return;
+            }
+
+            if (!price || parseFloat(price) <= 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please enter a valid price',
+                    confirmButtonColor: '#123b4f'
+                });
+                document.getElementById('price').focus();
+                return;
+            }
+
+            if (!shortDescription) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Short description is required',
+                    confirmButtonColor: '#123b4f'
+                });
+                document.getElementById('shortDescription').focus();
+                return;
+            }
+
+            if (members.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please add at least one member type (e.g., Adults)',
+                    confirmButtonColor: '#123b4f'
+                });
+                return;
+            }
+
+            // Collect itinerary
+            const itinerary = {};
+            const dayElements = document.querySelectorAll('#itineraryContainer .itinerary-day');
+            dayElements.forEach((dayElement, index) => {
+                const dayNumber = index + 1;
+                const titleInput = dayElement.querySelector('.day-title-input input');
+                const textarea = dayElement.querySelector('textarea');
+                const title = titleInput ? titleInput.value.trim() : '';
+                const description = textarea ? textarea.value.trim() : '';
+                itinerary['day' + dayNumber] = {
+                    title: title,
+                    description: description
+                };
+            });
+
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitSpinner = document.getElementById('submitSpinner');
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            submitSpinner.style.display = 'inline-block';
+
+            const formData = new FormData();
+            formData.append('id', document.getElementById('packageId').value);
+            formData.append('package_name', packageName);
+            formData.append('package_type', document.getElementById('packageType').value);
+            formData.append('days_count', daysCount);
+
+            const membersData = members.map(m => ({
+                label: m.label,
+                count: m.count
+            }));
+            formData.append('members', JSON.stringify(membersData));
+
+            formData.append('price', price);
+            formData.append('status', document.getElementById('status').value);
+            formData.append('short_description', shortDescription);
+            formData.append('description', document.getElementById('description').value.trim());
+            formData.append('itinerary', JSON.stringify(itinerary));
+
+            const featuresData = features.map(f => ({
+                name: f.name,
+                icon: f.icon || null
+            }));
+            formData.append('features', JSON.stringify(featuresData));
+            formData.append('deleted_features', JSON.stringify(deletedFeatureIcons));
+
+            // Main image
+            const mainImage = document.getElementById('mainImage').files[0];
+            if (mainImage) {
+                formData.append('main_image', mainImage);
+            }
+            formData.append('delete_main_image', document.getElementById('deleteMainImage').value);
+
+            // Gallery images
+            const galleryFiles = document.getElementById('galleryImages').files;
+            for (let i = 0; i < galleryFiles.length; i++) {
+                formData.append('gallery_images[]', galleryFiles[i]);
+            }
+            formData.append('deleted_gallery_images', document.getElementById('deletedGalleryImages').value);
+
+            // Feature icons
+            features.forEach((f) => {
+                if (f.iconFile) {
+                    formData.append('feature_icons[]', f.iconFile);
+                    formData.append('feature_icon_names[]', f.name);
+                }
+            });
+
+            fetch('ajax/edit-tour-package.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                submitText.style.display = 'inline';
+                submitSpinner.style.display = 'none';
+
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = 'tour-packages.php';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message,
+                        confirmButtonColor: '#123b4f'
+                    });
+                }
+            })
+            .catch(error => {
+                submitBtn.disabled = false;
+                submitText.style.display = 'inline';
+                submitSpinner.style.display = 'none';
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'An error occurred. Please try again.',
+                    confirmButtonColor: '#123b4f'
+                });
+            });
+        });
+    }
+});
+    </script>
 </body>
 
 </html>

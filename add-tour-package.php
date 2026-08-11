@@ -769,13 +769,13 @@ $currencySymbol = getCurrencySymbol($currencyCode);
                                 <option value="">Select Type</option>
                                 <option value="Adventure">🏔️ Adventure</option>
                                 <option value="Beach">🏖️ Beach</option>
-                                <option value="Cultural">🏛️ Cultural</option>
-                                <option value="Wildlife">🦁 Wildlife</option>
                                 <option value="City Break">🏙️ City Break</option>
-                                <option value="Luxury">✨ Luxury</option>
+                                <option value="Cultural">🏛️ Cultural</option>
                                 <option value="Family">👨‍👩‍👧‍👦 Family</option>
-                                <option value="Honeymoon">❤️ Honeymoon</option>
                                 <option value="Group">👥 Group</option>
+                                <option value="Honeymoon">❤️ Honeymoon</option>
+                                <option value="Luxury">✨ Luxury</option>
+                                <option value="Wildlife">🦁 Wildlife</option>
                             </select>
                         </div>
                     </div>

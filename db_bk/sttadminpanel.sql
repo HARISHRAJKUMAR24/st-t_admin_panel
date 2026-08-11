@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2026 at 12:52 PM
+-- Generation Time: Aug 11, 2026 at 08:39 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -81,7 +81,7 @@ CREATE TABLE `offers` (
 --
 
 INSERT INTO `offers` (`id`, `offer_code`, `title`, `description`, `discount_type`, `discount_value`, `tour_packages`, `main_image`, `start_date`, `end_date`, `status`, `created_at`, `updated_at`) VALUES
-(3, 'OFF001', 'efasfa', '', 'fixed', 11.00, '[\"4\",\"3\"]', 'uploads/offers/682987/2026-08-09/1786301409_88376bc7de5cd5d3.png', '2026-08-10', '2026-08-26', 'active', '2026-08-09 18:50:09', '2026-08-09 18:50:09');
+(3, 'OFF001', 'efasfa', '', 'fixed', 11.00, '[\"3\"]', 'uploads/offers/682987/2026-08-09/1786301409_88376bc7de5cd5d3.png', '2026-08-10', '2026-08-26', 'active', '2026-08-09 18:50:09', '2026-08-11 18:39:28');
 
 --
 -- Triggers `offers`
@@ -93,6 +93,50 @@ CREATE TRIGGER `before_insert_offers` BEFORE INSERT ON `offers` FOR EACH ROW BEG
         SELECT IFNULL(MAX(CAST(SUBSTRING(offer_code, 4) AS UNSIGNED)), 0) + 1 INTO next_id 
         FROM offers;
         SET NEW.offer_code = CONCAT('OFF', LPAD(next_id, 3, '0'));
+    END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `package_type_images`
+--
+
+CREATE TABLE `package_type_images` (
+  `id` int(11) NOT NULL,
+  `type_id` varchar(20) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `package_type_images`
+--
+
+INSERT INTO `package_type_images` (`id`, `type_id`, `name`, `image`, `created_at`, `updated_at`) VALUES
+(2, 'PKT002', 'Beach', 'uploads/package-types/568334/2026-08-11/1786463275_fd9168c07b1672f2.jpeg', '2026-08-11 14:20:00', '2026-08-11 15:47:55'),
+(3, 'PKT003', 'Cultural', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(4, 'PKT004', 'Wildlife', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(5, 'PKT005', 'City Break', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(6, 'PKT006', 'Luxury', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(7, 'PKT007', 'Family', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(8, 'PKT008', 'Honeymoon', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
+(9, 'PKT009', 'Group', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00');
+
+--
+-- Triggers `package_type_images`
+--
+DELIMITER $$
+CREATE TRIGGER `before_insert_package_type_images` BEFORE INSERT ON `package_type_images` FOR EACH ROW BEGIN
+    DECLARE next_id INT;
+    IF NEW.type_id IS NULL OR NEW.type_id = '' THEN
+        SELECT IFNULL(MAX(CAST(SUBSTRING(type_id, 4) AS UNSIGNED)), 0) + 1 INTO next_id 
+        FROM package_type_images;
+        SET NEW.type_id = CONCAT('PKT', LPAD(next_id, 3, '0'));
     END IF;
 END
 $$
@@ -129,7 +173,7 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `site_name`, `contact_email`, `contact_phone`, `address`, `currency`, `social_links`, `created_at`, `updated_at`, `timezone`, `site_title`, `website_logo`, `favicon`, `panel_logo`, `hero_image`, `site_tagline`, `footer_text`) VALUES
-(1, 'Tour Admin', 'admin@example.com', '+1234567890', '4/44 kadai theru rediplayam\r\nRamanathapuram Addl talk Thanjavur', 'INR', NULL, '2026-08-08 17:30:12', '2026-08-11 10:44:24', 'Asia/Kolkata', 'saran tours and travels', 'uploads/settings/logo/255861/2026-08-10/1786337756_e7932192b8c27839.png', 'uploads/settings/favicon/419185/2026-08-10/1786338297_9719c3854ef4d02f.png', 'uploads/settings/panel-logo/731156/2026-08-10/1786339225_8b6f91d8ff5ff440.png', 'uploads/settings/hero/517099/2026-08-11/1786445064_7394ade943e7b586.jpeg', NULL, '© 2024 Tour Admin. All rights reserved.');
+(1, 'Tour Admin', 'admin@example.com', '+1234567890', '4/44 kadai theru rediplayam\r\nRamanathapuram Addl talk Thanjavur', 'INR', NULL, '2026-08-08 17:30:12', '2026-08-11 12:10:04', 'Asia/Kolkata', 'saran tours and travels', 'uploads/settings/logo/366025/2026-08-11/1786450204_b222c890144a7b05.png', 'uploads/settings/favicon/419185/2026-08-10/1786338297_9719c3854ef4d02f.png', 'uploads/settings/panel-logo/731156/2026-08-10/1786339225_8b6f91d8ff5ff440.png', 'uploads/settings/hero/389910/2026-08-11/1786449852_175fef25c90c6f3e.jpeg', NULL, '© 2024 Tour Admin. All rights reserved.');
 
 -- --------------------------------------------------------
 
@@ -143,9 +187,7 @@ CREATE TABLE `tour_packages` (
   `package_name` varchar(255) NOT NULL,
   `package_type` varchar(100) DEFAULT NULL,
   `days_count` int(3) NOT NULL DEFAULT 1,
-  `adults` int(3) DEFAULT 0,
-  `children` int(3) DEFAULT 0,
-  `infants` int(3) DEFAULT 0,
+  `members` longtext DEFAULT NULL,
   `short_description` text DEFAULT NULL,
   `description` longtext DEFAULT NULL,
   `itinerary` longtext DEFAULT NULL,
@@ -163,9 +205,8 @@ CREATE TABLE `tour_packages` (
 -- Dumping data for table `tour_packages`
 --
 
-INSERT INTO `tour_packages` (`id`, `package_id`, `package_name`, `package_type`, `days_count`, `adults`, `children`, `infants`, `short_description`, `description`, `itinerary`, `features`, `main_image`, `gallery_images`, `price`, `discount_price`, `status`, `created_at`, `updated_at`) VALUES
-(3, 'TRP001', 'qq', 'Adventure', 2, 0, 0, 0, '111', '111', '{\"day1\":{\"title\":\"111\",\"description\":\"111\"}}', '[{\"name\":\"111\",\"icon\":\"uploads/tour-packages/features/823056/2026-08-09/1786297224_7bf2f125d9657e6a_0.jpg\"}]', 'uploads/tour-packages/main/738439/2026-08-09/1786296938_f8f695d080ccd174.jpeg', '[\"uploads/tour-packages/gallery/154797/2026-08-09/1786296938_7c5e9a7f2df26582_1.jpeg\",\"uploads/tour-packages/gallery/154797/2026-08-09/1786296938_77e7d0bc3eb1d7e1_2.jpg\"]', 11.00, NULL, 'active', '2026-08-09 17:35:38', '2026-08-09 17:40:24'),
-(4, 'TRP002', 'bxbf', 'Adventure', 1, 0, 0, 0, '1fxdbdf', 'gn fgnxfg', '{\"day1\":{\"title\":\"fvghnxfg\",\"description\":\"fgnfxgnfg\"}}', '[{\"name\":\"111gnv\",\"icon\":\"uploads/tour-packages/features/403982/2026-08-09/1786297293_25ef4e5defcf12dd_0.png\"}]', 'uploads/tour-packages/main/798696/2026-08-09/1786297293_c3f3f1f32243c45b.png', '[\"uploads/tour-packages/gallery/906359/2026-08-09/1786297293_b36ba46016e8a070_0.png\",\"uploads/tour-packages/gallery/906359/2026-08-09/1786297293_95462e6794e14d3f_1.png\",\"uploads/tour-packages/gallery/906359/2026-08-09/1786297293_4b423ec294dc53ec_2.png\",\"uploads/tour-packages/gallery/906359/2026-08-09/1786297293_67fae1bece7e3e3c_3.png\"]', 111.00, NULL, 'active', '2026-08-09 17:41:33', '2026-08-09 17:41:33');
+INSERT INTO `tour_packages` (`id`, `package_id`, `package_name`, `package_type`, `days_count`, `members`, `short_description`, `description`, `itinerary`, `features`, `main_image`, `gallery_images`, `price`, `discount_price`, `status`, `created_at`, `updated_at`) VALUES
+(3, 'TRP001', 'asdvsdvsd', 'Beach', 1, '[{\"label\":\"qwsw2\",\"count\":10},{\"label\":\"test\",\"count\":13}]', 'fc', 'dv dfvsf', '{\"day1\":{\"title\":\"fb df\",\"description\":\"fdb df\"}}', '[{\"name\":\"111eedgvsd\",\"icon\":\"http://localhost/st&t_admin_panel/uploads/tour-packages/features/909924/2026-08-11/1786470595_9c2fa9b29a3a7d59_0.png\"}]', 'uploads/tour-packages/main/351794/2026-08-11/1786470595_f89da767666cf969.png', NULL, 299.00, NULL, 'active', '2026-08-11 17:49:55', '2026-08-11 18:37:31');
 
 --
 -- Triggers `tour_packages`
@@ -263,7 +304,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `username`, `password`, `role`, `token`, `last_login`, `created_at`, `updated_at`, `phone`, `facebook`, `twitter`, `instagram`, `youtube`, `linkedin`, `whatsapp`) VALUES
-(1, 'Admin', 'sarantravels1908@gmail.com', 'admin', '$2y$10$DaJq4tiR2gB6MMKaKwFGV.8lo29jS9f.g5k4nQk76NpS9fMWC.40S', 'admin', 'a199ba2eac7423a37a51fae243ad4d5f1be08bb1a92febc61a951f41ec1b3425', '2026-08-11 11:05:23', '2026-08-08 08:37:54', '2026-08-11 05:35:23', '', NULL, NULL, NULL, NULL, NULL, NULL);
+(1, 'Admin', 'sarantravels1908@gmail.com', 'admin', '$2y$10$DaJq4tiR2gB6MMKaKwFGV.8lo29jS9f.g5k4nQk76NpS9fMWC.40S', 'admin', '02bd4b165a541039d91629ec7bcaa8a33ce584bb53da2b050471ee214d38282c', '2026-08-12 00:00:38', '2026-08-08 08:37:54', '2026-08-11 18:30:38', '', NULL, NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -281,6 +322,14 @@ ALTER TABLE `car_rentals`
 ALTER TABLE `offers`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `offer_code` (`offer_code`);
+
+--
+-- Indexes for table `package_type_images`
+--
+ALTER TABLE `package_type_images`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `type_id` (`type_id`),
+  ADD UNIQUE KEY `name` (`name`);
 
 --
 -- Indexes for table `settings`
@@ -333,10 +382,16 @@ ALTER TABLE `offers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `package_type_images`
+--
+ALTER TABLE `package_type_images`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
 -- AUTO_INCREMENT for table `tour_packages`
 --
 ALTER TABLE `tour_packages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `travel_bookings`

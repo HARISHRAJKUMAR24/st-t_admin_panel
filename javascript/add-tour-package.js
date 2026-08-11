@@ -1,5 +1,5 @@
 // =============================================
-// ADD TOUR PACKAGE - JAVASCRIPT (FIXED)
+// ADD TOUR PACKAGE - JAVASCRIPT (FIXED - MEMBERS COUNT)
 // =============================================
 
 let features = [];
@@ -19,18 +19,40 @@ document.addEventListener('DOMContentLoaded', function() {
     setupImageUpload('mainImage', 'mainImagePreview', 'mainImageBox', true);
     setupGalleryUpload('galleryImages', 'galleryImagesPreview', 'galleryImagesBox');
     setupFeatureIconUpload();
+    
+    // Update member count display
+    updateMemberCount();
 });
 
 // =============================================
-// MEMBERS (Badge Style)
+// MEMBERS (Badge Style - FIXED)
 // =============================================
 
-function addMember(label = '', count = 0) {
+function addMember(label = '', count = null) {
     const labelInput = document.getElementById('memberLabel');
     const countInput = document.getElementById('memberCount');
 
     let memberLabel = label || labelInput.value.trim();
-    let memberCount = count || parseInt(countInput.value) || 0;
+    
+    // Get the count value - if count is provided use it, otherwise get from input
+    let memberCount;
+    if (count !== null) {
+        memberCount = parseInt(count);
+    } else {
+        memberCount = parseInt(countInput.value);
+    }
+    
+    // If count is NaN or 0, show error
+    if (isNaN(memberCount) || memberCount < 1) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Count',
+            text: 'Please enter a count greater than 0',
+            confirmButtonColor: '#123b4f'
+        });
+        countInput.focus();
+        return;
+    }
 
     if (!memberLabel) {
         Swal.fire({
@@ -52,25 +74,29 @@ function addMember(label = '', count = 0) {
             text: `"${memberLabel}" already exists. Please use a different name.`,
             confirmButtonColor: '#123b4f'
         });
+        labelInput.focus();
         return;
     }
 
+    // Add member with the count
     members.push({
         label: memberLabel,
         count: memberCount
     });
 
     renderMembers();
+    updateMemberCount();
 
-    // Clear inputs
+    // Clear inputs - set count back to 1
     labelInput.value = '';
-    countInput.value = '0';
+    countInput.value = '1';
     labelInput.focus();
 }
 
 function removeMember(index) {
     members.splice(index, 1);
     renderMembers();
+    updateMemberCount();
 }
 
 function renderMembers() {
@@ -93,8 +119,20 @@ function renderMembers() {
         container.appendChild(badge);
     });
 
-    // Update hidden input
+    // Update hidden input with correct data
     document.getElementById('members').value = JSON.stringify(members);
+}
+
+function updateMemberCount() {
+    const totalMembers = members.reduce((sum, m) => sum + m.count, 0);
+    const types = members.length;
+    
+    if (types === 0) {
+        document.getElementById('memberCount').textContent = '0 Members';
+    } else {
+        document.getElementById('memberCount').textContent = 
+            `${totalMembers} Members (${types} ${types > 1 ? 'types' : 'type'})`;
+    }
 }
 
 // =============================================
@@ -224,12 +262,9 @@ function setupFeatureIconUpload() {
     const input = document.getElementById('featureIcon');
     const box = document.getElementById('featureIconBox');
 
-    console.log('Setting up feature icon upload...');
-
     if (input) {
         input.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            console.log('File selected:', file ? file.name : 'None');
 
             if (file) {
                 // Validate file size (max 1MB)
@@ -614,6 +649,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon: 'error',
                     title: 'Validation Error',
                     text: 'Main image is required',
+                    confirmButtonColor: '#123b4f'
+                });
+                return;
+            }
+
+            // Validate members
+            if (members.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please add at least one member type (e.g., Adults)',
+                    confirmButtonColor: '#123b4f'
+                });
+                return;
+            }
+
+            // Check if any member has count 0
+            const hasZeroCount = members.some(m => m.count === 0);
+            if (hasZeroCount) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Member count cannot be 0. Please remove members with 0 count.',
                     confirmButtonColor: '#123b4f'
                 });
                 return;

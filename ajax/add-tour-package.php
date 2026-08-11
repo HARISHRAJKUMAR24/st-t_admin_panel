@@ -3,8 +3,8 @@
 // ADD TOUR PACKAGE - AJAX HANDLER (UPDATED)
 // =============================================
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+error_reporting(0);
+ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
 
@@ -57,20 +57,9 @@ try {
         exit();
     }
 
-    // Extract members counts
-    $adults = 0;
-    $children = 0;
-    $infants = 0;
-    foreach ($members as $member) {
-        $label = strtolower($member['label'] ?? '');
-        $count = intval($member['count'] ?? 0);
-        if ($label === 'adults' || $label === 'adult') {
-            $adults = $count;
-        } elseif ($label === 'children' || $label === 'child') {
-            $children = $count;
-        } elseif ($label === 'infants' || $label === 'infant') {
-            $infants = $count;
-        }
+    if (empty($members) || count($members) === 0) {
+        echo json_encode(['success' => false, 'message' => 'At least one member type is required']);
+        exit();
     }
 
     // Start transaction
@@ -138,13 +127,14 @@ try {
     }
     unset($feature);
 
-    // Insert into database
+    // Insert into database (using members JSON instead of individual columns)
     $stmt = $pdo->prepare("INSERT INTO tour_packages (
-        package_name, package_type, days_count, adults, children, infants,
+        package_name, package_type, days_count, members,
         price, status, short_description, description,
         itinerary, features, main_image, gallery_images
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
+    $membersJson = json_encode($members, JSON_UNESCAPED_SLASHES);
     $itineraryJson = !empty($itinerary) ? json_encode($itinerary, JSON_UNESCAPED_SLASHES) : null;
     $featuresJson = !empty($features) ? json_encode($features, JSON_UNESCAPED_SLASHES) : null;
     $galleryJson = !empty($galleryImages) ? json_encode($galleryImages, JSON_UNESCAPED_SLASHES) : null;
@@ -153,9 +143,7 @@ try {
         $packageName,
         $packageType,
         $daysCount,
-        $adults,
-        $children,
-        $infants,
+        $membersJson,
         $price,
         $status,
         $shortDescription,
