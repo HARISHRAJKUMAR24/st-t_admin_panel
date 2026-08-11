@@ -59,19 +59,20 @@ function setupImageUpload(inputId, previewId, boxId) {
 // DELETE HERO IMAGE
 // =============================================
 
-function deleteHeroImage() {
+window.deleteHeroImage = function() {
     const imgWrapper = document.querySelector('.current-image-item');
     if (imgWrapper) {
         imgWrapper.remove();
     }
     document.getElementById('deleteHeroImage').value = '1';
-}
+};
 
 // =============================================
 // FORM SUBMISSION
 // =============================================
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Setup image upload
     setupImageUpload('heroImage', 'heroImagePreview', 'heroImageBox');
 
     const form = document.getElementById('websiteSettingsForm');
@@ -80,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Get form values
             const siteTitle = document.getElementById('siteTitle');
             const footerText = document.getElementById('footerText');
             const deleteHeroImage = document.getElementById('deleteHeroImage');
@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Show loading
             const submitBtn = document.getElementById('submitBtn');
             const submitText = document.getElementById('submitText');
             const submitSpinner = document.getElementById('submitSpinner');
@@ -105,20 +106,28 @@ document.addEventListener('DOMContentLoaded', function() {
             submitText.style.display = 'none';
             submitSpinner.style.display = 'inline-block';
 
+            // Prepare form data
             const formData = new FormData();
-            formData.append('site_title', siteTitle ? siteTitle.value.trim() : '');
+            formData.append('site_title', siteTitle.value.trim());
             formData.append('footer_text', footerText ? footerText.value.trim() : '');
             formData.append('delete_hero_image', deleteHeroImage ? deleteHeroImage.value : '0');
 
+            // Append hero image if selected
             if (heroImage && heroImage.files[0]) {
                 formData.append('hero_image', heroImage.files[0]);
             }
 
+            // Send AJAX request
             fetch('ajax/update-website-settings.php', {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     submitBtn.disabled = false;
                     submitText.style.display = 'inline';
@@ -158,7 +167,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-// Make functions global
-window.deleteHeroImage = deleteHeroImage;
-window.setupImageUpload = setupImageUpload;

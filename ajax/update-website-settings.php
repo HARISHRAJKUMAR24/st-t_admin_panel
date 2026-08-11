@@ -29,7 +29,7 @@ try {
         exit();
     }
 
-    // Get current settings
+    // Get current hero image
     $stmt = $pdo->prepare("SELECT hero_image FROM settings WHERE id = 1");
     $stmt->execute();
     $settings = $stmt->fetch();
@@ -41,6 +41,7 @@ try {
         $fullPath = '../' . $heroImagePath;
         if (file_exists($fullPath)) {
             @unlink($fullPath);
+            // Delete empty folders
             $dir = dirname($fullPath);
             if (is_dir($dir)) {
                 $files = scandir($dir);
@@ -58,6 +59,7 @@ try {
 
     // Upload new hero image
     if (isset($_FILES['hero_image']) && $_FILES['hero_image']['error'] === UPLOAD_ERR_OK) {
+        // Delete old image if exists and not already deleted
         if ($heroImagePath && $deleteHeroImage != 1) {
             $fullPath = '../' . $heroImagePath;
             if (file_exists($fullPath)) {
@@ -73,14 +75,23 @@ try {
             }
         }
 
+        // Create upload folder
         $uploadFolder = createUploadFolder('../uploads', 'settings/hero');
         if (!$uploadFolder) {
             throw new Exception('Failed to create upload folder');
         }
         
-        $uploadedPath = uploadImage($_FILES['hero_image'], $uploadFolder);
-        if ($uploadedPath) {
-            $heroImagePath = str_replace('../', '', $uploadedPath);
+        // Get file info
+        $file = $_FILES['hero_image'];
+        $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . pathinfo($file['name'], PATHINFO_EXTENSION);
+        $fullPath = $uploadFolder . '/' . $fileName;
+        $fullPath = str_replace('\\', '/', $fullPath);
+        
+        // Move uploaded file
+        if (move_uploaded_file($file['tmp_name'], $fullPath)) {
+            $heroImagePath = str_replace('../', '', $fullPath);
+        } else {
+            throw new Exception('Failed to move uploaded file');
         }
     }
 
@@ -105,9 +116,15 @@ try {
 
 } catch (PDOException $e) {
     error_log('Database error in update-website-settings.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Database error occurred']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database error occurred: ' . $e->getMessage()
+    ]);
 } catch (Exception $e) {
     error_log('Error in update-website-settings.php: ' . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
 ?>

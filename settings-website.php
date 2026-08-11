@@ -18,7 +18,7 @@ $stmt->execute();
 $settings = $stmt->fetch();
 
 if (!$settings) {
-    $stmt = $pdo->prepare("INSERT INTO settings (id) VALUES (1)");
+    $stmt = $pdo->prepare("INSERT INTO settings (id, site_title, footer_text) VALUES (1, 'Tour Admin Panel', '© 2024 Tour Admin. All rights reserved.')");
     $stmt->execute();
     $settings = [
         'id' => 1, 
@@ -27,6 +27,9 @@ if (!$settings) {
         'footer_text' => '© 2024 Tour Admin. All rights reserved.'
     ];
 }
+
+// Get hero image path
+$heroImage = $settings['hero_image'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -121,16 +124,6 @@ if (!$settings) {
             border-color: #ffd966;
             box-shadow: 0 0 0 4px rgba(255, 215, 100, 0.15);
             background: white;
-        }
-
-        .form-control::placeholder {
-            color: #9bb2c5;
-            font-weight: 400;
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 80px;
         }
 
         .btn-submit {
@@ -414,7 +407,9 @@ if (!$settings) {
         </div>
 
         <div class="page-wrapper">
-
+            <a href="settings.php" class="back-link">
+                <i class="bi bi-arrow-left me-1"></i> Back to Settings
+            </a>
 
             <div class="page-header">
                 <h4><i class="bi bi-globe2 me-2" style="color:#f5b342;"></i>Website Settings</h4>
@@ -430,12 +425,12 @@ if (!$settings) {
 
                     <div class="mb-4">
                         <label class="form-label">Hero Image</label>
-                        <?php if (!empty($settings['hero_image'])): ?>
+                        <?php if (!empty($heroImage)): ?>
                             <div class="mb-2">
                                 <div class="current-image-label">Current Image:</div>
                                 <div class="current-image-wrapper">
                                     <div class="current-image-item">
-                                        <img src="<?= APP_URL . $settings['hero_image'] ?>" alt="Hero Image" class="hero-preview">
+                                        <img src="<?= APP_URL . $heroImage ?>" alt="Hero Image" class="hero-preview">
                                         <button type="button" class="delete-image-btn" onclick="deleteHeroImage()">
                                             <i class="bi bi-x"></i>
                                         </button>
