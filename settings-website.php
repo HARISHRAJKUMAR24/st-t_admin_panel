@@ -289,11 +289,6 @@ $heroImage = $settings['hero_image'] ?? null;
             background: #dc3545;
         }
 
-        .image-preview-empty {
-            color: #9bb2c5;
-            font-size: 0.8rem;
-            padding: 0.5rem 0;
-        }
 
         /* Current Image */
         .current-image-wrapper {
@@ -444,7 +439,7 @@ $heroImage = $settings['hero_image'] ?? null;
                             </div>
                             <div class="image-preview-wrapper">
                                 <div id="heroImagePreview" class="image-preview">
-                                    <div class="image-preview-empty">No new image selected</div>
+                                   
                                 </div>
                             </div>
                         </div>
