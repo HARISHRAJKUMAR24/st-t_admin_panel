@@ -611,7 +611,7 @@ $types = $stmt->fetchAll();
                             <i class="bi bi-x-circle me-1"></i> Cancel
                         </button>
                         <button type="submit" class="btn-submit" id="submitBtn">
-                            <span id="submitText"><i class="bi bi-check2 me-2"></i>Update Image</span>
+                            <span id="submitText">Update Image</span>
                             <span id="submitSpinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
                         </button>
                     </div>

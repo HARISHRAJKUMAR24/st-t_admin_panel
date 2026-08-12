@@ -439,7 +439,9 @@ $carRentals = $stmt->fetchAll();
                         title: 'Deleting...',
                         text: 'Please wait...',
                         allowOutsideClick: false,
-                        didOpen: () => { Swal.showLoading(); }
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
                     });
 
                     const formData = new FormData();
