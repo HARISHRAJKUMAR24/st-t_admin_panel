@@ -1,6 +1,6 @@
 <?php
 // =============================================
-// DELETE PACKAGE TYPE - AJAX HANDLER
+// DELETE PACKAGE TYPE IMAGE ONLY - AJAX HANDLER
 // =============================================
 
 error_reporting(0);
@@ -8,15 +8,18 @@ ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
 
+// Fix: Correct path to config
 require_once '../config/config.php';
 require_once '../config/function.php';
 
+// Check if user is logged in
 if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
+// Only handle POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
@@ -63,20 +66,20 @@ try {
         }
     }
 
-    // Delete from database
-    $stmt = $pdo->prepare("DELETE FROM package_type_images WHERE id = ?");
+    // Update database - set image to NULL
+    $stmt = $pdo->prepare("UPDATE package_type_images SET image = NULL WHERE id = ?");
     $stmt->execute([$id]);
 
     echo json_encode([
         'success' => true,
-        'message' => 'Package type deleted successfully!'
+        'message' => 'Image deleted successfully!'
     ]);
 
 } catch (PDOException $e) {
-    error_log('Database error in delete-package-type.php: ' . $e->getMessage());
+    error_log('Database error in delete-package-type-image.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'Database error occurred']);
 } catch (Exception $e) {
-    error_log('Error in delete-package-type.php: ' . $e->getMessage());
+    error_log('Error in delete-package-type-image.php: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>
