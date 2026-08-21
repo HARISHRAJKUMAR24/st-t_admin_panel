@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2026 at 08:39 PM
+-- Generation Time: Aug 18, 2026 at 10:52 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -118,7 +118,8 @@ CREATE TABLE `package_type_images` (
 --
 
 INSERT INTO `package_type_images` (`id`, `type_id`, `name`, `image`, `created_at`, `updated_at`) VALUES
-(2, 'PKT002', 'Beach', 'uploads/package-types/568334/2026-08-11/1786463275_fd9168c07b1672f2.jpeg', '2026-08-11 14:20:00', '2026-08-11 15:47:55'),
+(1, 'PKT001', 'Adventure', 'uploads/package-types/870964/2026-08-12/1786548929_45c30b1cb0d14e16.jpeg', '2026-08-12 05:34:49', '2026-08-12 15:35:29'),
+(2, 'PKT002', 'Beach', NULL, '2026-08-11 14:20:00', '2026-08-12 05:28:28'),
 (3, 'PKT003', 'Cultural', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
 (4, 'PKT004', 'Wildlife', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
 (5, 'PKT005', 'City Break', NULL, '2026-08-11 14:20:00', '2026-08-11 14:20:00'),
@@ -178,6 +179,22 @@ INSERT INTO `settings` (`id`, `site_name`, `contact_email`, `contact_phone`, `ad
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `testimonials`
+--
+
+CREATE TABLE `testimonials` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `logo` varchar(255) DEFAULT NULL,
+  `testimonial` text NOT NULL,
+  `status` enum('publish','unpublish') DEFAULT 'publish',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tour_packages`
 --
 
@@ -206,7 +223,7 @@ CREATE TABLE `tour_packages` (
 --
 
 INSERT INTO `tour_packages` (`id`, `package_id`, `package_name`, `package_type`, `days_count`, `members`, `short_description`, `description`, `itinerary`, `features`, `main_image`, `gallery_images`, `price`, `discount_price`, `status`, `created_at`, `updated_at`) VALUES
-(3, 'TRP001', 'asdvsdvsd', 'Beach', 1, '[{\"label\":\"qwsw2\",\"count\":10},{\"label\":\"test\",\"count\":13}]', 'fc', 'dv dfvsf', '{\"day1\":{\"title\":\"fb df\",\"description\":\"fdb df\"}}', '[{\"name\":\"111eedgvsd\",\"icon\":\"http://localhost/st&t_admin_panel/uploads/tour-packages/features/909924/2026-08-11/1786470595_9c2fa9b29a3a7d59_0.png\"}]', 'uploads/tour-packages/main/351794/2026-08-11/1786470595_f89da767666cf969.png', NULL, 299.00, NULL, 'active', '2026-08-11 17:49:55', '2026-08-11 18:37:31');
+(3, 'TRP001', 'asdvsdvsd', 'Beach', 1, '[{\"label\":\"qwsw2\",\"count\":10},{\"label\":\"test\",\"count\":13}]', 'fc', 'dv dfvsf', '{\"day1\":{\"title\":\"fb df\",\"description\":\"fdb df\"}}', '[{\"name\":\"111eedgvsd\",\"icon\":\"https://dev.1milestonetech.com/uploads/tour-packages/features/909924/2026-08-11/1786470595_9c2fa9b29a3a7d59_0.png\"}]', 'uploads/tour-packages/main/351794/2026-08-11/1786470595_f89da767666cf969.png', NULL, 299.00, NULL, 'active', '2026-08-11 17:49:55', '2026-08-11 18:37:31');
 
 --
 -- Triggers `tour_packages`
@@ -304,7 +321,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `username`, `password`, `role`, `token`, `last_login`, `created_at`, `updated_at`, `phone`, `facebook`, `twitter`, `instagram`, `youtube`, `linkedin`, `whatsapp`) VALUES
-(1, 'Admin', 'sarantravels1908@gmail.com', 'admin', '$2y$10$DaJq4tiR2gB6MMKaKwFGV.8lo29jS9f.g5k4nQk76NpS9fMWC.40S', 'admin', '02bd4b165a541039d91629ec7bcaa8a33ce584bb53da2b050471ee214d38282c', '2026-08-12 00:00:38', '2026-08-08 08:37:54', '2026-08-11 18:30:38', '', NULL, NULL, NULL, NULL, NULL, NULL);
+(1, 'Admin', 'sarantravels1908@gmail.com', 'admin', '$2y$10$DaJq4tiR2gB6MMKaKwFGV.8lo29jS9f.g5k4nQk76NpS9fMWC.40S', 'admin', '6caa8e46eb8e86a7ede4245a71588eb00140b908e36f6f1467dd54ddf73edb43', '2026-08-18 11:33:02', '2026-08-08 08:37:54', '2026-08-18 06:03:02', '', NULL, NULL, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -335,6 +352,12 @@ ALTER TABLE `package_type_images`
 -- Indexes for table `settings`
 --
 ALTER TABLE `settings`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `testimonials`
+--
+ALTER TABLE `testimonials`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -386,6 +409,12 @@ ALTER TABLE `offers`
 --
 ALTER TABLE `package_type_images`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `testimonials`
+--
+ALTER TABLE `testimonials`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tour_packages`

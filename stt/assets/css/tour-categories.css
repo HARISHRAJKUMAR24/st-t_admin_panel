@@ -1,0 +1,906 @@
+/* =========================================================
+   TOUR CATEGORIES
+   ========================================================= */
+
+.tour-categories-section {
+    position: relative;
+    padding: 80px 0 90px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.tour-categories-section > div[style*="max-width"] {
+    max-width: 1200px !important;
+}
+
+
+/* =========================================================
+   DECORATIVE STAMPS
+   ========================================================= */
+
+.tour-category-stamp {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    line-height: 0;
+}
+
+.tour-category-stamp img {
+    width: 240px;
+    height: 240px;
+    object-fit: contain;
+    display: block;
+    opacity: .45;
+}
+
+.tour-category-stamp-1 {
+    top: -35px;
+    left: -35px;
+    transform: rotate(-18deg);
+}
+
+.tour-category-stamp-2 {
+    right: -35px;
+    bottom: -35px;
+    transform: rotate(12deg);
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.tour-categories-section .categories-header {
+    position: relative;
+    z-index: 5;
+    max-width: 720px;
+    margin: 0 auto 25px;
+    text-align: center;
+}
+
+.tour-categories-section .cat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    background: transparent;
+    border: 1px dashed rgba(0, 0, 0, .15);
+
+    padding: 6px 16px 6px 12px;
+    border-radius: 100px;
+
+    font-size: 14px;
+    font-weight: 400;
+    color: #5e5e5e;
+
+    font-family: 'Inter', system-ui, sans-serif;
+    margin-bottom: 14px;
+}
+
+.tour-categories-section .cat-badge .badge-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.tour-categories-section .cat-badge .badge-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.tour-categories-section .cat-badge .badge-text {
+    color: #5e5e5e;
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   TITLE
+   ========================================================= */
+
+.tour-categories-section .categories-title {
+    max-width: 720px;
+    margin: 0 auto;
+
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 4.6rem);
+    font-weight: 700;
+
+    line-height: 1.05;
+    letter-spacing: -2.8px;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+
+    gap: 0 12px;
+
+    color: #171715;
+}
+
+.tour-categories-section .categories-title .italic {
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   CAROUSEL VIEWPORT
+   ========================================================= */
+
+.tour-categories-section .categories-viewport {
+    position: relative;
+
+    width: 100%;
+    max-width: 1120px;
+
+    height: 520px;
+
+    margin: 20px auto 0;
+
+    overflow: hidden;
+
+    z-index: 3;
+
+    display: flex;
+    align-items: flex-start;
+}
+
+
+/* =========================================================
+   TRACK
+   ========================================================= */
+
+.tour-categories-section .categories-track {
+    position: relative;
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: 22px;
+
+    width: max-content;
+
+    padding: 20px 0 30px;
+
+    will-change: transform;
+
+    transition:
+        transform .75s cubic-bezier(.22, .61, .36, 1);
+}
+
+
+/* =========================================================
+   CATEGORY CARD
+   ========================================================= */
+
+.tour-categories-section .category-card {
+    flex: 0 0 300px;
+    width: 300px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    text-decoration: none;
+    color: inherit;
+
+    background: transparent;
+
+    overflow: visible;
+
+    position: relative;
+
+    opacity: .55;
+
+    transform:
+        translateY(42px) scale(.86);
+
+    transform-origin: center top;
+
+    transition:
+        transform .75s cubic-bezier(.22, .61, .36, 1),
+        opacity .6s ease,
+        filter .6s ease;
+
+    z-index: 1;
+}
+
+
+/* =========================================================
+   CENTER CARD
+   ========================================================= */
+
+.tour-categories-section .category-card.center-card {
+    flex-basis: 300px;
+    width: 300px;
+
+    opacity: 1;
+
+    transform:
+        translateY(0) scale(1);
+
+    z-index: 5;
+}
+
+
+/* =========================================================
+   SIDE CARDS
+   ========================================================= */
+
+.tour-categories-section .category-card.side-card {
+    opacity: .72;
+
+    transform:
+        translateY(42px) scale(.82);
+
+    z-index: 2;
+}
+
+
+/* =========================================================
+   HIDDEN CARDS
+   ========================================================= */
+
+.tour-categories-section .category-card.hidden-card,
+.tour-categories-section .category-card:not(.center-card):not(.side-card) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+
+/* =========================================================
+   IMAGE
+   ========================================================= */
+
+.tour-categories-section .category-card .card-image {
+    position: relative;
+
+    width: 100%;
+
+    aspect-ratio: 3 / 4.15;
+
+    overflow: hidden;
+
+    border-radius: 48% 44% 46% 42%;
+
+    background: #eee;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, .08);
+
+    transition:
+        box-shadow .5s ease,
+        border-radius .5s ease;
+}
+
+
+/* Center image */
+
+.tour-categories-section
+.category-card.center-card
+.card-image {
+    border-radius: 50% 46% 48% 44%;
+
+    box-shadow:
+        0 22px 55px rgba(0, 0, 0, .16);
+}
+
+
+/* Image */
+
+.tour-categories-section
+.category-card
+.card-image img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    transition:
+        transform .8s cubic-bezier(.22, .61, .36, 1);
+}
+
+
+/* Active image */
+
+.tour-categories-section
+.category-card.center-card
+.card-image img {
+    transform: scale(1.015);
+}
+
+
+/* Side fade */
+
+.tour-categories-section
+.category-card.side-card
+.card-image::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background: rgba(255, 255, 255, .18);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   CARD OVERLAY
+   ========================================================= */
+
+.tour-categories-section .card-overlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, .10);
+
+    opacity: 0;
+
+    border-radius: inherit;
+
+    transition: opacity .3s ease;
+}
+
+.tour-categories-section
+.category-card:hover
+.card-overlay {
+    opacity: 1;
+}
+
+.tour-categories-section .arrow-icon {
+    width: 54px;
+    height: 54px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, .94);
+
+    border-radius: 50%;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, .18);
+
+    transform: scale(.7);
+
+    transition: transform .35s ease;
+}
+
+.tour-categories-section
+.category-card:hover
+.arrow-icon {
+    transform: scale(1);
+}
+
+.tour-categories-section .arrow-icon i {
+    font-size: 18px;
+    color: #171715;
+}
+
+
+/* =========================================================
+   CARD TITLE
+   ========================================================= */
+
+.tour-categories-section .category-card .card-title {
+    width: 100%;
+
+    padding-top: 14px;
+
+    text-align: center;
+
+    font-family: 'Inter', sans-serif;
+
+    font-size: 17px;
+    line-height: 1.2;
+    font-weight: 600;
+
+    color: #858585;
+
+    letter-spacing: -.3px;
+
+    transition:
+        color .4s ease,
+        font-size .4s ease;
+}
+
+.tour-categories-section
+.category-card.center-card
+.card-title {
+    color: #171715;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   DOTS
+   ========================================================= */
+
+.tour-categories-section .category-dots {
+    position: relative;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    min-height: 12px;
+
+    margin-top: 4px;
+}
+
+.tour-categories-section .category-dot {
+    width: 8px;
+    height: 8px;
+
+    padding: 0;
+    margin: 0;
+
+    border: 0;
+    border-radius: 50%;
+
+    background: #d0d0d0;
+
+    cursor: pointer;
+
+    transition:
+        width .35s ease,
+        background .35s ease;
+}
+
+.tour-categories-section .category-dot.active {
+    width: 26px;
+    height: 8px;
+
+    border-radius: 20px;
+
+    background: #171715;
+}
+
+
+/* =========================================================
+   BUTTON AREA
+   ========================================================= */
+
+.tour-categories-section .category-actions {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    gap: 16px;
+
+    margin-top: 32px;
+
+    position: relative;
+    z-index: 10;
+
+    flex-wrap: wrap;
+}
+
+
+/* View all */
+
+.tour-categories-section .btn-view-all {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 6px 7px 6px 28px;
+
+    background: #1a1a17;
+    color: #fff;
+
+    border-radius: 100px;
+
+    text-decoration: none;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    font-family: 'Inter', sans-serif;
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+
+    line-height: 1;
+}
+
+.tour-categories-section .btn-view-all:hover {
+    color: #fff;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, .18);
+}
+
+.tour-categories-section
+.btn-view-all
+.icon-wrap {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fedbe5;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+}
+
+.tour-categories-section
+.btn-view-all
+.icon-wrap i {
+    font-size: 16px;
+    color: #1a1a17;
+}
+
+
+/* Free badge */
+
+.tour-categories-section .free-badge {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 8px 16px;
+
+    background: #f7f7f7;
+
+    border: 1px solid rgba(0, 0, 0, .08);
+
+    border-radius: 100px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: #555;
+
+    font-family: 'Inter', sans-serif;
+}
+
+.tour-categories-section
+.free-badge i {
+    font-size: 13px;
+    color: #f6cdbb;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .tour-categories-section {
+        padding: 70px 0 70px;
+    }
+
+    .tour-categories-section .categories-title {
+        font-size: 3.3rem;
+        letter-spacing: -2px;
+    }
+
+    .tour-categories-section .categories-viewport {
+        max-width: 850px;
+        height: 440px;
+    }
+
+    .tour-category-stamp img {
+        width: 190px;
+        height: 190px;
+    }
+
+    .tour-category-stamp-1 {
+        top: -25px;
+        left: -25px;
+    }
+
+    .tour-category-stamp-2 {
+        right: -25px;
+        bottom: -25px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 576px) {
+
+    .tour-categories-section {
+        padding: 45px 0 50px;
+    }
+
+
+    /* Header */
+
+    .tour-categories-section .categories-header {
+        max-width: 100%;
+        padding: 0 16px;
+
+        margin-bottom: 15px;
+    }
+
+    .tour-categories-section .cat-badge {
+        gap: 7px;
+
+        padding: 5px 12px 5px 10px;
+
+        font-size: 11px;
+
+        margin-bottom: 12px;
+    }
+
+    .tour-categories-section .cat-badge .badge-icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .tour-categories-section .cat-badge .badge-text {
+        font-size: 11px;
+    }
+
+
+    /* Title */
+
+    .tour-categories-section .categories-title {
+        max-width: 340px;
+
+        padding: 0;
+
+        font-size: clamp(2rem, 9vw, 2.5rem);
+
+        line-height: 1.05;
+
+        letter-spacing: -1.4px;
+
+        gap: 0 6px;
+    }
+
+
+    /* Stamps */
+
+    .tour-category-stamp img {
+        width: 125px;
+        height: 125px;
+
+        opacity: .28;
+    }
+
+    .tour-category-stamp-1 {
+        top: -20px;
+        left: -35px;
+
+        transform: rotate(-18deg);
+    }
+
+    .tour-category-stamp-2 {
+        right: -30px;
+        bottom: -20px;
+
+        transform: rotate(12deg);
+    }
+
+
+    /* Carousel */
+
+    .tour-categories-section .categories-viewport {
+        width: 100%;
+
+        max-width: 100%;
+
+        height: 350px;
+
+        margin-top: 10px;
+
+        overflow: hidden;
+    }
+
+    .tour-categories-section .categories-track {
+        gap: 14px;
+
+        padding: 12px 0 20px;
+    }
+
+
+    /* Mobile card */
+
+    .tour-categories-section .category-card {
+        flex-basis: 220px;
+        width: 220px;
+    }
+
+    .tour-categories-section
+    .category-card.center-card {
+        flex-basis: 220px;
+        width: 220px;
+
+        transform:
+            translateY(0) scale(1);
+    }
+
+    .tour-categories-section
+    .category-card.side-card {
+        transform:
+            translateY(25px) scale(.82);
+    }
+
+
+    /* Image */
+
+    .tour-categories-section
+    .category-card
+    .card-image {
+        aspect-ratio: 3 / 4;
+    }
+
+
+    /* Titles */
+
+    .tour-categories-section
+    .category-card
+    .card-title {
+        padding-top: 10px;
+        font-size: 13px;
+    }
+
+    .tour-categories-section
+    .category-card.center-card
+    .card-title {
+        font-size: 16px;
+    }
+
+
+    /* Arrow */
+
+    .tour-categories-section .arrow-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    .tour-categories-section .arrow-icon i {
+        font-size: 15px;
+    }
+
+
+    /* Dots */
+
+    .tour-categories-section .category-dots {
+        margin-top: 2px;
+        gap: 6px;
+    }
+
+    .tour-categories-section .category-dot {
+        width: 7px;
+        height: 7px;
+    }
+
+    .tour-categories-section .category-dot.active {
+        width: 22px;
+        height: 7px;
+    }
+
+
+    /* Buttons */
+
+    .tour-categories-section .category-actions {
+        margin-top: 22px;
+
+        gap: 8px;
+
+        padding: 0 16px;
+    }
+
+    .tour-categories-section .btn-view-all {
+        padding: 5px 5px 5px 18px;
+
+        gap: 10px;
+
+        font-size: 12px;
+    }
+
+    .tour-categories-section
+    .btn-view-all
+    .icon-wrap {
+        width: 36px;
+        height: 36px;
+    }
+
+    .tour-categories-section
+    .btn-view-all
+    .icon-wrap i {
+        font-size: 14px;
+    }
+
+    .tour-categories-section .free-badge {
+        font-size: 10px;
+        padding: 6px 10px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .tour-categories-section {
+        padding-top: 40px;
+        padding-bottom: 45px;
+    }
+
+    .tour-categories-section .categories-title {
+        max-width: 300px;
+        font-size: 1.9rem;
+        letter-spacing: -1px;
+    }
+
+    .tour-category-stamp img {
+        width: 100px;
+        height: 100px;
+
+        opacity: .22;
+    }
+
+    .tour-category-stamp-1 {
+        left: -30px;
+        top: -15px;
+    }
+
+    .tour-category-stamp-2 {
+        right: -25px;
+        bottom: -15px;
+    }
+
+    .tour-categories-section .categories-viewport {
+        height: 315px;
+    }
+
+    .tour-categories-section .category-card {
+        flex-basis: 200px;
+        width: 200px;
+    }
+
+    .tour-categories-section
+    .category-card.center-card {
+        flex-basis: 200px;
+        width: 200px;
+    }
+
+    .tour-categories-section
+    .category-card.center-card
+    .card-title {
+        font-size: 15px;
+    }
+
+    .tour-categories-section .category-actions {
+        padding: 0 10px;
+    }
+}

@@ -83,7 +83,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => 'Login successful! Welcome back!',
-        'redirect' => APP_URL . 'index.php',
+        'redirect' => APP_URL . 'index',
         'user' => [
             'id' => $user['id'],
             'name' => $user['name'],

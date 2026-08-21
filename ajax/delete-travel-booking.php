@@ -48,7 +48,7 @@ try {
             if (!empty($item['icon'])) {
                 // Clean the path - remove APP_URL if present
                 $iconPath = str_replace(APP_URL, '', $item['icon']);
-                $iconPath = str_replace('http://localhost/st&t_admin_panel/', '', $iconPath);
+                $iconPath = str_replace('https://dev.1milestonetech.com/', '', $iconPath);
                 $fullPath = '../' . $iconPath;
                 
                 if (file_exists($fullPath)) {

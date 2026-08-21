@@ -22,12 +22,17 @@
 
     <ul class="nav flex-column">
         <li class="nav-item">
+            <a class="nav-link" href="http://localhost/st&t_admin_panel/stt/" target="_blank" rel="noopener noreferrer">
+                <i class="bi bi-globe2"></i> Visit Website
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'index.php' || basename($_SERVER['PHP_SELF']) == 'index' ? 'active' : '' ?>" href="index">
                 <i class="bi bi-grid-1x2-fill"></i> Dashboard
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'bookings.php' ? 'active' : '' ?>" href="#">
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'bookings.php' ? 'active' : '' ?>" href="bookings.php">
                 <i class="bi bi-calendar-event-fill"></i> Bookings
             </a>
         </li>
@@ -36,13 +41,14 @@
                 <i class="bi bi-people-fill"></i> Customers
             </a>
         </li>
+
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'customer-tracking.php' ? 'active' : '' ?>" href="customer-tracking">
-                <i class="bi bi-person-bounding-box"></i> Customer Tracking
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'testimonials.php' || basename($_SERVER['PHP_SELF']) == 'add-testimonial.php' || basename($_SERVER['PHP_SELF']) == 'edit-testimonial.php' ? 'active' : '' ?>" href="testimonials">
+                <i class="bi bi-chat-quote-fill"></i> Testimonial
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'revenue.php' ? 'active' : '' ?>" href="#">
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'revenue.php' ? 'active' : '' ?>" href="revenue.php">
                 <i class="bi bi-wallet2"></i> Revenue
             </a>
         </li>

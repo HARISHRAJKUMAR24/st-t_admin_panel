@@ -444,12 +444,15 @@ $carRentals = $stmt->fetchAll();
                         }
                     });
 
-                    const formData = new FormData();
-                    formData.append('id', id);
-
+                    // Send as JSON instead of FormData
                     fetch('ajax/delete-car-rental.php', {
                             method: 'POST',
-                            body: formData
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                id: id
+                            })
                         })
                         .then(response => response.json())
                         .then(data => {

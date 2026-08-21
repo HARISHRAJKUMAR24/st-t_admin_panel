@@ -1,0 +1,574 @@
+/* =========================================================
+   TRAVELLER STORIES
+   ========================================================= */
+
+.stories-section {
+    width: 100%;
+    background: #ffffff;
+    padding: 100px 0 110px;
+    overflow: hidden;
+}
+
+.stories-inner {
+    width: min(1320px, calc(100% - 80px));
+    margin: 0 auto;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.stories-inner > .row {
+    margin-bottom: 55px;
+}
+
+.stories-inner > .row > .col-lg-7 {
+    width: 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+.stories-inner > .row > .col-lg-5 {
+    display: none;
+}
+
+
+.stories-badge {
+    display: inline-block;
+
+    margin-bottom: 20px;
+
+    color: #c86f55;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    letter-spacing: 0.5px;
+}
+
+
+.stories-title {
+    max-width: 760px;
+
+    color: #1d1d1b;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+    font-size: clamp(42px, 5vw, 68px);
+
+    font-weight: 500;
+
+    line-height: 1.05;
+
+    letter-spacing: -2px;
+}
+
+
+.stories-title em {
+    color: #c86f55;
+    font-style: italic;
+}
+
+
+/* =========================================================
+   CTA
+   ========================================================= */
+
+.stories-cta-row {
+    display: flex;
+    align-items: center;
+
+    gap: 22px;
+
+    margin-top: 32px;
+}
+
+
+.stories-btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 18px;
+
+    min-height: 52px;
+
+    padding: 6px 7px 6px 22px;
+
+    border-radius: 999px;
+
+    background: #1d1d1b;
+
+    color: #fff;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
+
+
+.stories-btn:hover {
+    color: #fff;
+
+    background: #000;
+
+    transform: translateY(-2px);
+}
+
+
+.stories-btn .arrow {
+    width: 39px;
+    height: 39px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #fff;
+
+    color: #222;
+
+    font-size: 13px;
+}
+
+
+.stories-ig {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    color: #e74673;
+
+    font-size: 13px;
+
+    text-decoration: none;
+}
+
+
+.stories-ig i {
+    font-size: 17px;
+}
+
+
+/* =========================================================
+   RATING
+   ========================================================= */
+
+.stories-rating-row {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    margin-top: 30px;
+}
+
+
+.stories-avatars {
+    display: flex;
+
+    align-items: center;
+}
+
+
+.stories-avatars img {
+    width: 38px;
+    height: 38px;
+
+    object-fit: cover;
+
+    border-radius: 50%;
+
+    border: 3px solid #fff;
+
+    margin-left: -7px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.12);
+}
+
+
+.stories-avatars img:first-child {
+    margin-left: 0;
+}
+
+
+.stories-score {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    color: #222;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+
+.stars {
+    color: #efa82f;
+
+    letter-spacing: 1px;
+
+    font-size: 14px;
+}
+
+
+.stories-score-sub {
+    margin-top: 3px;
+
+    color: #888;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   REVIEW COLUMNS
+   ========================================================= */
+
+.stories-columns {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    align-items: start;
+
+    gap: 24px;
+
+    position: relative;
+}
+
+
+.stories-col {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24px;
+
+    will-change: transform;
+}
+
+
+/* =========================================================
+   REVIEW CARD
+   ========================================================= */
+
+.stories-card {
+    width: 100%;
+
+    padding: 26px 26px 28px;
+
+    background: #f7f7f6;
+
+    border: 1px solid #eeeeec;
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,.035);
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease,
+        background .25s ease;
+}
+
+
+.stories-card:hover {
+    background: #fff;
+
+    transform: translateY(-4px);
+
+    box-shadow:
+        0 14px 35px rgba(0,0,0,.08);
+}
+
+
+/* =========================================================
+   PERSON
+   ========================================================= */
+
+.stories-person {
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+}
+
+
+.stories-person img {
+    width: 48px;
+    height: 48px;
+
+    flex: 0 0 48px;
+
+    object-fit: cover;
+
+    border-radius: 50%;
+
+    background: #ddd;
+}
+
+
+.stories-person .name {
+    color: #202020;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    line-height: 1.3;
+}
+
+
+.stories-person .role {
+    margin-top: 3px;
+
+    color: #929292;
+
+    font-size: 12px;
+
+    line-height: 1.3;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.stories-card-divider {
+    width: 100%;
+
+    height: 1px;
+
+    margin: 19px 0;
+
+    background:
+        #ddddda;
+}
+
+
+/* =========================================================
+   TESTIMONIAL TEXT
+   ========================================================= */
+
+.stories-card p {
+    margin: 0;
+
+    color: #5f5f5d;
+
+    font-size: 14px;
+
+    line-height: 1.75;
+}
+
+
+/* =========================================================
+   REMOVE OLD GHOST STYLE
+   ========================================================= */
+
+.stories-card.ghost {
+    opacity: 1;
+
+    visibility: visible;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .stories-section {
+        padding: 80px 0 90px;
+    }
+
+    .stories-inner {
+        width: min(
+            100% - 50px,
+            850px
+        );
+    }
+
+    .stories-columns {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 20px;
+    }
+
+    .stories-col:last-child {
+        display: none;
+    }
+
+    .stories-title {
+        font-size: 50px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+
+    .stories-section {
+        padding: 65px 0 70px;
+    }
+
+    .stories-inner {
+        width: calc(100% - 32px);
+    }
+
+    .stories-inner > .row {
+        margin-bottom: 35px;
+    }
+
+    .stories-title {
+        font-size: 39px;
+
+        letter-spacing: -1px;
+    }
+
+    .stories-cta-row {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 15px;
+
+        margin-top: 25px;
+    }
+
+    .stories-rating-row {
+        margin-top: 25px;
+    }
+
+    .stories-columns {
+        grid-template-columns: 1fr;
+
+        gap: 18px;
+    }
+
+    .stories-col {
+        gap: 18px;
+    }
+
+    .stories-col:last-child {
+        display: flex;
+    }
+
+    .stories-card {
+        padding: 22px;
+
+        border-radius: 17px;
+    }
+
+    .stories-card p {
+        font-size: 13px;
+
+        line-height: 1.7;
+    }
+}
+
+/* =========================================================
+   TESTIMONIAL GRID FOG
+   Only the review cards get the fade effect
+   ========================================================= */
+
+.stories-columns {
+    position: relative;
+    overflow: hidden;
+
+    /* Important: enough vertical area for the fog */
+    padding-top: 45px;
+    padding-bottom: 45px;
+}
+
+
+/* =========================================================
+   TOP FOG
+   ========================================================= */
+
+.stories-columns::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    height: 300px;
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    background: linear-gradient(
+        to bottom,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.95) 20%,
+        rgba(255, 255, 255, 0.70) 45%,
+        rgba(255, 255, 255, 0.30) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+
+/* =========================================================
+   BOTTOM FOG
+   ========================================================= */
+
+.stories-columns::after {
+    content: "";
+
+    position: absolute;
+
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    height: 270px;
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    background: linear-gradient(
+        to top,
+        #ffffff 0%,
+        rgba(255, 255, 255, 0.95) 20%,
+        rgba(255, 255, 255, 0.70) 45%,
+        rgba(255, 255, 255, 0.30) 70%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
