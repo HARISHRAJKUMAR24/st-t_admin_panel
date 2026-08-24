@@ -53,8 +53,8 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'car-rentals.php' || basename($_SERVER['PHP_SELF']) == 'add-car-rental.php' || basename($_SERVER['PHP_SELF']) == 'edit-car-rental.php' ? 'active' : '' ?>" href="car-rentals">
-                <i class="bi bi-car-front-fill"></i> Car Rental
+            <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'vehicle.php' || basename($_SERVER['PHP_SELF']) == 'add-vehicle.php' || basename($_SERVER['PHP_SELF']) == 'edit-vehicle.php' ? 'active' : '' ?>" href="vehicle">
+                <i class="bi bi-car-front-fill"></i> Vehicle
             </a>
         </li>
         <li class="nav-item">

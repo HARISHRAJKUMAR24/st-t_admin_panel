@@ -367,13 +367,33 @@ $bookings = $stmt->fetchAll();
                     <i class="bi bi-car-front"></i>
                     <h5>No Bookings Yet</h5>
                     <p>Create your first travel booking to get started.</p>
-                   
+                    <a href="add-travel-booking.php" class="btn-add-empty">Add New Booking</a>
                 </div>
             <?php else: ?>
                 <div class="row g-3">
                     <?php foreach ($bookings as $booking):
                         $stops = json_decode($booking['stops'], true) ?: [];
                         $provide = json_decode($booking['what_we_provide'], true) ?: [];
+                        
+                        // Handle both old format (with icons) and new format (simple strings)
+                        $provideItems = [];
+                        if (!empty($provide)) {
+                            foreach ($provide as $item) {
+                                if (is_array($item)) {
+                                    // Old format: {'name': 'Item', 'icon': 'path'}
+                                    $provideItems[] = [
+                                        'name' => $item['name'] ?? 'Unknown',
+                                        'icon' => $item['icon'] ?? null
+                                    ];
+                                } else {
+                                    // New format: just a string
+                                    $provideItems[] = [
+                                        'name' => $item,
+                                        'icon' => null
+                                    ];
+                                }
+                            }
+                        }
                     ?>
                         <div class="col-md-6 col-lg-4 col-xl-3">
                             <div class="booking-card">
@@ -404,7 +424,7 @@ $bookings = $stmt->fetchAll();
                                         <?php foreach (array_slice($stops, 0, 2) as $stop): ?>
                                             <span class="stop-tag">
                                                 <i class="bi bi-geo-alt me-1"></i>
-                                                <?= htmlspecialchars($stop['pickup']) ?> → <?= htmlspecialchars($stop['drop']) ?>
+                                                <?= htmlspecialchars($stop['pickup'] ?? '') ?> → <?= htmlspecialchars($stop['drop'] ?? '') ?>
                                                 <?= isset($stop['distance']) ? number_format($stop['distance'], 1) : '--' ?>km
                                             </span>
                                         <?php endforeach; ?>
@@ -414,9 +434,9 @@ $bookings = $stmt->fetchAll();
                                     </div>
                                 <?php endif; ?>
 
-                                <?php if (!empty($provide)): ?>
+                                <?php if (!empty($provideItems)): ?>
                                     <div class="booking-provide">
-                                        <?php foreach (array_slice($provide, 0, 2) as $item): ?>
+                                        <?php foreach (array_slice($provideItems, 0, 2) as $item): ?>
                                             <span class="provide-tag">
                                                 <?php if (!empty($item['icon'])): ?>
                                                     <img src="<?= APP_URL . $item['icon'] ?>" alt="">
@@ -426,18 +446,18 @@ $bookings = $stmt->fetchAll();
                                                 <?= htmlspecialchars($item['name']) ?>
                                             </span>
                                         <?php endforeach; ?>
-                                        <?php if (count($provide) > 2): ?>
-                                            <span class="provide-tag">+<?= count($provide) - 2 ?></span>
+                                        <?php if (count($provideItems) > 2): ?>
+                                            <span class="provide-tag">+<?= count($provideItems) - 2 ?></span>
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 
                                 <div class="booking-actions">
-                                    <a href="edit-travel-booking.php?booking_id=<?= $booking['booking_id'] ?>" class="btn-action btn-edit">
-                                        <i class="bi bi-pencil"></i>
+                                    <a href="edit-travel-booking.php?id=<?= $booking['id'] ?>" class="btn-action btn-edit">
+                                        <i class="bi bi-pencil"></i> Edit
                                     </a>
                                     <button class="btn-action btn-delete" onclick="deleteBooking(<?= $booking['id'] ?>, '<?= $booking['booking_id'] ?>')">
-                                        <i class="bi bi-trash"></i>
+                                        <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </div>
                             </div>

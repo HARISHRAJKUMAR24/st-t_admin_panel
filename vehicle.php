@@ -16,16 +16,16 @@ $currentUser = getCurrentUser($pdo);
 $currencyCode = getCurrencyCode($pdo);
 $currencySymbol = getCurrencySymbol($currencyCode);
 
-// Fetch car rentals
-$stmt = $pdo->query("SELECT * FROM car_rentals ORDER BY created_at DESC");
-$carRentals = $stmt->fetchAll();
+// Fetch Vehicles
+$stmt = $pdo->query("SELECT * FROM vehicles ORDER BY created_at DESC");
+$vehicles = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <?php include_once 'includes/head_links.php'; ?>
-    <title>Car Rentals · Tour Admin</title>
+    <title>Vehicles · Tour Admin</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .page-wrapper {
@@ -77,7 +77,7 @@ $carRentals = $stmt->fetchAll();
             color: #ffd966;
         }
 
-        .car-card {
+        .vehicle-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(4px);
             border-radius: 12px;
@@ -88,24 +88,24 @@ $carRentals = $stmt->fetchAll();
             height: 100%;
         }
 
-        .car-card:hover {
+        .vehicle-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 30px rgba(0, 20, 30, 0.08);
             border-color: #ffd966;
         }
 
-        .car-card .car-image {
+        .vehicle-card .vehicle-image {
             width: 100%;
             height: 110px;
             object-fit: contain;
             background: #f4f7fc;
         }
 
-        .car-card .car-body {
+        .vehicle-card .vehicle-body {
             padding: 0.6rem 0.7rem 0.7rem;
         }
 
-        .car-card .car-name {
+        .vehicle-card .vehicle-name {
             font-weight: 700;
             color: #0b2a3e;
             font-size: 0.85rem;
@@ -115,7 +115,7 @@ $carRentals = $stmt->fetchAll();
             text-overflow: ellipsis;
         }
 
-        .car-card .car-details {
+        .vehicle-card .vehicle-details {
             color: #5f7d92;
             font-size: 0.65rem;
             display: flex;
@@ -124,18 +124,18 @@ $carRentals = $stmt->fetchAll();
             margin-top: 2px;
         }
 
-        .car-card .car-details span {
+        .vehicle-card .vehicle-details span {
             display: flex;
             align-items: center;
             gap: 3px;
         }
 
-        .car-card .car-details i {
+        .vehicle-card .vehicle-details i {
             font-size: 0.6rem;
             color: #9bb2c5;
         }
 
-        .car-card .car-price {
+        .vehicle-card .vehicle-price {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -144,24 +144,45 @@ $carRentals = $stmt->fetchAll();
             border-top: 1px solid #f0f5fa;
         }
 
-        .car-card .price {
+        .vehicle-card .price {
             font-weight: 700;
             color: #0b2a3e;
             font-size: 0.9rem;
         }
 
-        .car-card .price .currency-symbol {
+        .vehicle-card .price .currency-symbol {
             font-weight: 700;
             margin-right: 1px;
         }
 
-        .car-card .price small {
+        .vehicle-card .price small {
             font-weight: 400;
             font-size: 0.55rem;
             color: #5f7d92;
         }
 
-        .car-card .status-badge {
+        .vehicle-card .pricing-badge {
+            padding: 0.1rem 0.4rem;
+            border-radius: 10px;
+            font-size: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: rgba(255, 215, 100, 0.2);
+            color: #b8860b;
+            margin-left: 4px;
+        }
+
+        .vehicle-card .pricing-badge.package {
+            background: rgba(40, 167, 69, 0.15);
+            color: #28a745;
+        }
+
+        .vehicle-card .pricing-badge.perday {
+            background: rgba(13, 110, 253, 0.15);
+            color: #0d6efd;
+        }
+
+        .vehicle-card .status-badge {
             padding: 0.1rem 0.5rem;
             border-radius: 20px;
             font-size: 0.55rem;
@@ -184,7 +205,7 @@ $carRentals = $stmt->fetchAll();
             color: #ffc107;
         }
 
-        .car-card .car-actions {
+        .vehicle-card .vehicle-actions {
             display: flex;
             gap: 4px;
             margin-top: 0.4rem;
@@ -192,7 +213,7 @@ $carRentals = $stmt->fetchAll();
             border-top: 1px solid #f0f5fa;
         }
 
-        .car-card .car-actions .btn-sm {
+        .vehicle-card .vehicle-actions .btn-sm {
             padding: 0.15rem 0.5rem;
             font-size: 0.65rem;
             border-radius: 6px;
@@ -281,46 +302,46 @@ $carRentals = $stmt->fetchAll();
                 justify-content: center;
             }
 
-            .car-card .car-image {
+            .vehicle-card .vehicle-image {
                 height: 90px;
             }
 
-            .car-card .car-name {
+            .vehicle-card .vehicle-name {
                 font-size: 0.75rem;
             }
 
-            .car-card .price {
+            .vehicle-card .price {
                 font-size: 0.8rem;
             }
 
-            .car-card .car-details {
+            .vehicle-card .vehicle-details {
                 font-size: 0.6rem;
             }
         }
 
         @media (max-width: 576px) {
-            .car-card .car-image {
+            .vehicle-card .vehicle-image {
                 height: 80px;
             }
 
-            .car-card .car-name {
+            .vehicle-card .vehicle-name {
                 font-size: 0.7rem;
             }
 
-            .car-card .price {
+            .vehicle-card .price {
                 font-size: 0.75rem;
             }
 
-            .car-card .car-details {
+            .vehicle-card .vehicle-details {
                 font-size: 0.55rem;
                 gap: 2px 4px;
             }
 
-            .car-card .car-body {
+            .vehicle-card .vehicle-body {
                 padding: 0.4rem 0.5rem 0.5rem;
             }
 
-            .car-card .car-actions .btn-sm {
+            .vehicle-card .vehicle-actions .btn-sm {
                 font-size: 0.55rem;
                 padding: 0.1rem 0.4rem;
             }
@@ -340,70 +361,82 @@ $carRentals = $stmt->fetchAll();
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
-                <small>Car Rentals</small>
+                <small>Vehicles</small>
             </div>
         </div>
 
         <div class="page-wrapper">
             <div class="section-header">
-                <h4><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Car Rentals</h4>
+                <h4><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Vehicles</h4>
                 <div>
-                    <span class="badge-count"><i class="bi bi-car-front me-1"></i><?= count($carRentals) ?></span>
-                    <a href="add-car-rental.php" class="btn-add ms-2">
+                    <span class="badge-count"><i class="bi bi-car-front me-1"></i><?= count($vehicles) ?></span>
+                    <a href="add-vehicle.php" class="btn-add ms-2">
                         <i class="bi bi-plus-circle"></i> Add New
                     </a>
                 </div>
             </div>
 
-            <?php if (empty($carRentals)): ?>
+            <?php if (empty($vehicles)): ?>
                 <div class="empty-state">
                     <i class="bi bi-car-front"></i>
-                    <h5>No cars added yet</h5>
-                    <p>Click "Add New" to add your first car rental.</p>
-                    <a href="add-car-rental.php" class="btn-add-empty">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Car
-                    </a>
+                    <h5>No vehicles added yet</h5>
+                    <p>Click "Add New" to add your first vehicle.</p>
+                   
                 </div>
             <?php else: ?>
                 <div class="row g-2">
-                    <?php foreach ($carRentals as $car): ?>
+                    <?php foreach ($vehicles as $vehicle): 
+                        // Get pricing type label
+                        $pricingType = $vehicle['pricing_type'] ?? 'perday';
+                        $pricingLabel = $pricingType == 'package' ? 'Package' : 'Per Day';
+                        $pricingClass = $pricingType == 'package' ? 'package' : 'perday';
+                        
+                        // Get price display
+                        if ($pricingType == 'package') {
+                            $priceDisplay = number_format($vehicle['package_price'] ?? 0, 0);
+                            $priceSuffix = '/pkg';
+                        } else {
+                            $priceDisplay = number_format($vehicle['per_day_amount'], 0);
+                            $priceSuffix = '/d';
+                        }
+                    ?>
                         <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
-                            <div class="car-card">
-                                <img src="<?= APP_URL . $car['car_image'] ?>"
-                                    alt="<?= htmlspecialchars($car['car_name']) ?>"
-                                    class="car-image"
-                                    onerror="this.src='https://via.placeholder.com/300x110/123b4f/ffffff?text=Car'">
-                                <div class="car-body">
-                                    <div class="car-name" title="<?= htmlspecialchars($car['car_name']) ?>">
-                                        <?= htmlspecialchars($car['car_name']) ?>
+                            <div class="vehicle-card">
+                                <img src="<?= APP_URL . $vehicle['vehicle_image'] ?>"
+                                    alt="<?= htmlspecialchars($vehicle['vehicle_name']) ?>"
+                                    class="vehicle-image">
+                                <div class="vehicle-body">
+                                    <div class="vehicle-name" title="<?= htmlspecialchars($vehicle['vehicle_name']) ?>">
+                                        <?= htmlspecialchars($vehicle['vehicle_name']) ?>
                                     </div>
-                                    <div class="car-details">
-                                        <?php if ($car['car_brand']): ?>
-                                            <span><i class="bi bi-building"></i><?= htmlspecialchars($car['car_brand']) ?></span>
+                                    <div class="vehicle-details">
+                                        <?php if ($vehicle['vehicle_brand']): ?>
+                                            <span><i class="bi bi-building"></i><?= htmlspecialchars($vehicle['vehicle_brand']) ?></span>
                                         <?php endif; ?>
-                                        <?php if ($car['car_model']): ?>
-                                            <span><i class="bi bi-tag"></i><?= htmlspecialchars($car['car_model']) ?></span>
+                                        <?php if ($vehicle['vehicle_model']): ?>
+                                            <span><i class="bi bi-tag"></i><?= htmlspecialchars($vehicle['vehicle_model']) ?></span>
                                         <?php endif; ?>
-                                        <?php if ($car['seating_capacity'] > 0): ?>
-                                            <span><i class="bi bi-people"></i><?= $car['seating_capacity'] ?></span>
+                                        <?php if ($vehicle['seating_capacity'] > 0): ?>
+                                            <span><i class="bi bi-people"></i><?= $vehicle['seating_capacity'] ?></span>
                                         <?php endif; ?>
-                                        <?php if ($car['fuel_type']): ?>
-                                            <span><i class="bi bi-fuel-pump"></i><?= htmlspecialchars(substr($car['fuel_type'], 0, 3)) ?></span>
+                                        <?php if ($vehicle['fuel_type']): ?>
+                                            <span><i class="bi bi-fuel-pump"></i><?= htmlspecialchars(substr($vehicle['fuel_type'], 0, 3)) ?></span>
                                         <?php endif; ?>
                                     </div>
-                                    <div class="car-price">
+                                    <div class="vehicle-price">
                                         <span class="price">
                                             <span class="currency-symbol"><?= htmlspecialchars($currencySymbol) ?></span>
-                                            <?= number_format($car['per_day_amount'], 0) ?>
-                                            <small>/d</small>
+                                            <?= $priceDisplay ?>
+                                            <small><?= $priceSuffix ?></small>
+                                            <span class="pricing-badge <?= $pricingClass ?>"><?= $pricingLabel ?></span>
                                         </span>
-                                        <span class="status-badge status-<?= $car['status'] ?>"><?= substr($car['status'], 0, 4) ?></span>
+                                        <span class="status-badge status-<?= $vehicle['status'] ?>"><?= substr($vehicle['status'], 0, 4) ?></span>
                                     </div>
-                                    <div class="car-actions">
-                                        <button class="btn-sm btn-edit" onclick="editCar(<?= $car['id'] ?>)">
+                                    <div class="vehicle-actions">
+                                        <button class="btn-sm btn-edit" onclick="editVehicle(<?= $vehicle['id'] ?>)">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <button class="btn-sm btn-delete" onclick="deleteCar(<?= $car['id'] ?>)">
+                                        <button class="btn-sm btn-delete" onclick="deleteVehicle(<?= $vehicle['id'] ?>)">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -420,14 +453,14 @@ $carRentals = $stmt->fetchAll();
     </script>
     <script src="<?= APP_URL ?>javascript/main.js"></script>
     <script>
-        function editCar(id) {
-            window.location.href = 'edit-car-rental.php?id=' + id;
+        function editVehicle(id) {
+            window.location.href = 'edit-vehicle.php?id=' + id;
         }
 
-        function deleteCar(id) {
+        function deleteVehicle(id) {
             Swal.fire({
-                title: 'Delete Car?',
-                text: 'Are you sure you want to delete this car? This action cannot be undone.',
+                title: 'Delete Vehicle?',
+                text: 'Are you sure you want to delete this vehicle? This action cannot be undone.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -444,8 +477,7 @@ $carRentals = $stmt->fetchAll();
                         }
                     });
 
-                    // Send as JSON instead of FormData
-                    fetch('ajax/delete-car-rental.php', {
+                    fetch('ajax/delete-vehicle.php', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

@@ -25,13 +25,13 @@ $totalTours = $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_travel_bookings");
 $totalTravelBookings = $stmt->fetchColumn();
 
-// Total Car Rentals
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM car_rentals");
-$totalCarRentals = $stmt->fetchColumn();
+// Total Vehicles (FIXED: changed from car_rentals to vehicles)
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM vehicles");
+$totalVehicles = $stmt->fetchColumn();
 
-// Total Car Bookings
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_car_rentals_bookings");
-$totalCarBookings = $stmt->fetchColumn();
+// Total Vehicle Bookings (FIXED: changed from customer_car_rentals_bookings to customer_vehicle_bookings)
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_vehicle_bookings");
+$totalVehicleBookings = $stmt->fetchColumn();
 
 // Total Customers (from all customer tables - unique)
 $stmt = $pdo->query("SELECT COUNT(DISTINCT customer_name) as count FROM customer_tour_bookings");
@@ -40,10 +40,10 @@ $tourCustomers = $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT COUNT(DISTINCT customer_name) as count FROM customer_travel_bookings");
 $travelCustomers = $stmt->fetchColumn();
 
-$stmt = $pdo->query("SELECT COUNT(DISTINCT customer_name) as count FROM customer_car_rentals_bookings");
-$carCustomers = $stmt->fetchColumn();
+$stmt = $pdo->query("SELECT COUNT(DISTINCT customer_name) as count FROM customer_vehicle_bookings");
+$vehicleCustomers = $stmt->fetchColumn();
 
-$totalCustomers = $tourCustomers + $travelCustomers + $carCustomers;
+$totalCustomers = $tourCustomers + $travelCustomers + $vehicleCustomers;
 
 // Total Enquiries (CTA Messages)
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM cta_messages");
@@ -67,11 +67,11 @@ $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM customer_travel_bookings WH
 $stmt->execute([$today]);
 $todayTravelBookings = $stmt->fetchColumn();
 
-$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM customer_car_rentals_bookings WHERE DATE(created_at) = ?");
+$stmt = $pdo->prepare("SELECT COUNT(*) as count FROM customer_vehicle_bookings WHERE DATE(created_at) = ?");
 $stmt->execute([$today]);
-$todayCarBookings = $stmt->fetchColumn();
+$todayVehicleBookings = $stmt->fetchColumn();
 
-$todayBookings = $todayTourBookings + $todayTravelBookings + $todayCarBookings;
+$todayBookings = $todayTourBookings + $todayTravelBookings + $todayVehicleBookings;
 
 // Pending Bookings
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_tour_bookings WHERE status = 'pending'");
@@ -80,10 +80,10 @@ $pendingTour = $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_travel_bookings WHERE status = 'pending'");
 $pendingTravel = $stmt->fetchColumn();
 
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_car_rentals_bookings WHERE status = 'pending'");
-$pendingCar = $stmt->fetchColumn();
+$stmt = $pdo->query("SELECT COUNT(*) as count FROM customer_vehicle_bookings WHERE status = 'pending'");
+$pendingVehicle = $stmt->fetchColumn();
 
-$pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
+$pendingBookings = $pendingTour + $pendingTravel + $pendingVehicle;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -319,19 +319,38 @@ $pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
             color: #9bb2c5;
         }
 
+        .badge-type {
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .badge-type.tour {
+            background: rgba(40, 167, 69, 0.12);
+            color: #28a745;
+        }
+
+        .badge-type.travel {
+            background: rgba(0, 123, 255, 0.12);
+            color: #007bff;
+        }
+
+        .badge-type.car {
+            background: rgba(255, 193, 7, 0.12);
+            color: #b8860b;
+        }
+
         @media (max-width: 768px) {
             .stat-number {
                 font-size: 1.2rem;
             }
-
             .card-stats {
                 padding: 0.8rem;
             }
-
             .card-glass {
                 padding: 1rem;
             }
-
             .table-modern td,
             .table-modern th {
                 font-size: 0.7rem;
@@ -343,7 +362,6 @@ $pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
             .stat-number {
                 font-size: 1rem;
             }
-
             .stat-icon {
                 width: 38px;
                 height: 38px;
@@ -400,14 +418,14 @@ $pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
                 </div>
             </div>
 
-            <!-- Total Car Rentals -->
+            <!-- Total Vehicles -->
             <div class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
                 <div class="card-stats d-flex align-items-center">
                     <div class="stat-icon orange me-3"><i class="bi bi-car-front-fill"></i></div>
                     <div>
-                        <div class="stat-number"><?= number_format($totalCarRentals) ?></div>
-                        <div class="stat-label">Car Rentals</div>
-                        <span class="trend-up"><i class="bi bi-arrow-up-short"></i> <?= $totalCarBookings ?> bookings</span>
+                        <div class="stat-number"><?= number_format($totalVehicles) ?></div>
+                        <div class="stat-label">Total Vehicles</div>
+                        <span class="trend-up"><i class="bi bi-arrow-up-short"></i> <?= $totalVehicleBookings ?> bookings</span>
                     </div>
                 </div>
             </div>
@@ -511,8 +529,8 @@ $pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
                                     $recentBookings[] = $row;
                                 }
 
-                                // Car bookings
-                                $stmt = $pdo->query("SELECT customer_name, 'Car' as type, created_at, status FROM customer_car_rentals_bookings ORDER BY created_at DESC LIMIT 5");
+                                // Vehicle bookings (FIXED: changed from customer_car_rentals_bookings)
+                                $stmt = $pdo->query("SELECT customer_name, 'Vehicle' as type, created_at, status FROM customer_vehicle_bookings ORDER BY created_at DESC LIMIT 5");
                                 while ($row = $stmt->fetch()) {
                                     $recentBookings[] = $row;
                                 }
@@ -614,7 +632,7 @@ $pendingBookings = $pendingTour + $pendingTravel + $pendingCar;
                     <div style="font-size:1.8rem;color:#28a745;">
                         <i class="bi bi-star"></i>
                     </div>
-                    <div class="stat-number" style="font-size:1.2rem;"><?= $totalTours + $totalCarRentals ?></div>
+                    <div class="stat-number" style="font-size:1.2rem;"><?= $totalTours + $totalVehicles ?></div>
                     <div class="stat-label">Total Services</div>
                 </div>
             </div>

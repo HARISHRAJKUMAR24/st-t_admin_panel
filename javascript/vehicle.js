@@ -30,7 +30,7 @@ function deleteCar(id) {
                 }
             });
 
-            fetch('ajax/delete-car-rental.php', {
+            fetch('ajax/delete-vehicle.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -17,7 +17,7 @@ $currentUser = getCurrentUser($pdo);
 
 <head>
     <?php include_once 'includes/head_links.php'; ?>
-    <title>Add Car Rental · Tour Admin</title>
+    <title>Add Vehicle · Tour Admin</title>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -264,6 +264,80 @@ $currentUser = getCurrentUser($pdo);
             box-shadow: 0 4px 12px rgba(255, 215, 100, 0.3);
         }
 
+        /* Pricing Options */
+        .pricing-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .pricing-option {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            border: 2px solid #e8edf3;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .pricing-option:hover {
+            border-color: #ffd966;
+            background: rgba(255, 215, 100, 0.05);
+        }
+
+        .pricing-option.active {
+            border-color: #ffd966;
+            background: rgba(255, 215, 100, 0.1);
+            box-shadow: 0 0 0 4px rgba(255, 215, 100, 0.1);
+        }
+
+        .pricing-option i {
+            font-size: 1.5rem;
+            color: #123b4f;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .pricing-option .option-title {
+            font-weight: 600;
+            color: #123b4f;
+            font-size: 0.9rem;
+        }
+
+        .pricing-option .option-desc {
+            color: #5f7d92;
+            font-size: 0.75rem;
+        }
+
+        .pricing-fields {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid #e8edf3;
+            display: none;
+        }
+
+        .pricing-fields.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Button alignment */
         .form-actions {
             display: flex;
@@ -326,6 +400,18 @@ $currentUser = getCurrentUser($pdo);
             }
         }
 
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             .form-section {
                 padding: 1rem;
@@ -364,6 +450,14 @@ $currentUser = getCurrentUser($pdo);
                 width: 100%;
                 justify-content: center;
             }
+
+            .pricing-options {
+                flex-direction: column;
+            }
+
+            .pricing-option {
+                min-width: unset;
+            }
         }
     </style>
 </head>
@@ -385,60 +479,112 @@ $currentUser = getCurrentUser($pdo);
             </button>
             <div class="greeting-center">
                 Welcome back, <strong><?= htmlspecialchars($currentUser['name'] ?? 'Admin') ?></strong>
-                <small>Add new car rental</small>
+                <small>Add New Vehicle</small>
             </div>
         </div>
 
-        <!-- ====== ADD CAR RENTAL FORM ====== -->
+        <!-- ====== ADD VEHICLE FORM ====== -->
         <div class="form-section">
-            <h5 class="section-title"><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Add New Car Rental</h5>
+            <h5 class="section-title"><i class="bi bi-car-front-fill me-2" style="color:#f5b342;"></i>Add New Vehicle</h5>
 
-            <form id="addCarRentalForm" enctype="multipart/form-data">
-                <!-- Row 1: Car Name, Model, Brand (3 columns) -->
+            <form id="addVehicleForm" enctype="multipart/form-data">
+                <!-- Row 1: Vehicle Name, Model, Brand (3 columns) -->
                 <div class="row g-3 mb-3">
                     <div class="col-md-4">
-                        <label class="form-label">Car Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="carName" placeholder="e.g., Toyota Innova" required>
+                        <label class="form-label">Vehicle Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="vehicleName" placeholder="e.g., Toyota Innova" required>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Car Model</label>
-                        <input type="text" class="form-control" id="carModel" placeholder="e.g., 2024 Crysta">
+                        <label class="form-label">Vehicle Model</label>
+                        <input type="text" class="form-control" id="vehicleModel" placeholder="e.g., 2024 Crysta">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Brand</label>
-                        <input type="text" class="form-control" id="carBrand" placeholder="e.g., Toyota">
+                        <input type="text" class="form-control" id="vehicleBrand" placeholder="e.g., Toyota">
                     </div>
                 </div>
 
-                <!-- Row 2: Car Type with Badge Style -->
+                <!-- Row 2: Vehicle Type with Badge Style -->
                 <div class="row g-3 mb-3">
                     <div class="col-12">
-                        <label class="form-label">Car Type <span class="text-danger">*</span></label>
+                        <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>
                         <div class="badge-input-wrapper">
                             <div class="badge-input-row">
-                                <input type="text" class="form-control" id="carTypeInput" placeholder="Enter car type (e.g., SUV, Sedan, Luxury)">
-                                <button type="button" class="btn-sm-primary" id="addCarTypeBtn">
+                                <input type="text" class="form-control" id="vehicleTypeInput" placeholder="Enter vehicle type (e.g., SUV, Sedan, Luxury)">
+                                <button type="button" class="btn-sm-primary" id="addVehicleTypeBtn">
                                     <i class="bi bi-plus-circle"></i> Add
                                 </button>
                             </div>
-                            <div class="badges-container" id="carTypesList">
-                                <div class="empty-badges">No car types added</div>
+                            <div class="badges-container" id="vehicleTypesList">
+                                <div class="empty-badges">No vehicle types added</div>
                             </div>
-                            <input type="hidden" id="carTypes" name="car_types" value="">
-                            <small class="text-muted" style="font-size:0.7rem;">Type a car type and click Add to include it</small>
+                            <input type="hidden" id="vehicleTypes" name="vehicle_types" value="">
+                            <small class="text-muted" style="font-size:0.7rem;">Type a vehicle type and click Add to include it</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Row 3: Per Day, Per KM (2 columns) -->
+                <!-- Row 3: Pricing Options -->
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Per Day Amount <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="perDayAmount" placeholder="0.00" step="0.01" required>
+                    <div class="col-12">
+                        <label class="form-label">Pricing Type <span class="text-danger">*</span></label>
+                        <div class="pricing-options">
+                            <!-- Option 1: Per Day + Per KM -->
+                            <div class="pricing-option active" data-option="perday" onclick="selectPricing('perday')">
+                                <i class="bi bi-calendar-day"></i>
+                                <div class="option-title">Per Day + Per KM</div>
+                                <div class="option-desc">Daily rate + per kilometer charge</div>
+                            </div>
+                            <!-- Option 2: Package -->
+                            <div class="pricing-option" data-option="package" onclick="selectPricing('package')">
+                                <i class="bi bi-box-seam"></i>
+                                <div class="option-title">Package</div>
+                                <div class="option-desc">Fixed days with KM limit + extra KM charge</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="pricingType" name="pricing_type" value="perday">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Per KM Charge <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="perKmCharge" placeholder="0.00" step="0.01" required>
+                </div>
+
+                <!-- Pricing Fields -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <!-- Per Day Pricing -->
+                        <div class="pricing-fields active" id="perdayPricing">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Per Day Amount <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="perDayAmount" placeholder="0.00" step="0.01" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Per KM Charge <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="perKmCharge" placeholder="0.00" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Package Pricing -->
+                        <div class="pricing-fields" id="packagePricing">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Package Days <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="packageDays" placeholder="e.g., 7" min="1" value="7">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Package Price <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="packagePrice" placeholder="0.00" step="0.01">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Package KM Limit <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="packageKmLimit" placeholder="e.g., 300" min="0" value="300">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Extra KM Charge <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="extraKmCharge" placeholder="0.00" step="0.01">
+                                    <small class="text-muted">Charge per KM if package limit is exceeded</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -492,7 +638,7 @@ $currentUser = getCurrentUser($pdo);
                 <div class="row g-3 mb-3">
                     <div class="col-12">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="description" rows="2" placeholder="Enter car description, features, etc."></textarea>
+                        <textarea class="form-control" id="description" rows="2" placeholder="Enter vehicle description, features, etc."></textarea>
                     </div>
                 </div>
 
@@ -536,7 +682,7 @@ $currentUser = getCurrentUser($pdo);
 
                 <!-- Buttons - Bottom Right -->
                 <div class="form-actions">
-                    <button type="button" class="btn-cancel" onclick="window.location.href='car-rentals.php'">
+                    <button type="button" class="btn-cancel" onclick="window.location.href='vehicle.php'">
                         <i class="bi bi-x-circle me-2"></i>Cancel
                     </button>
                     <button type="submit" class="btn-submit" id="submitBtn">
@@ -553,61 +699,100 @@ $currentUser = getCurrentUser($pdo);
     </script>
     <script>
         // =============================================
-        // CAR RENTAL ADD - AJAX HANDLER
+        // VEHICLE ADD - AJAX HANDLER
         // =============================================
 
-        let carTypes = [];
+        let vehicleTypes = [];
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Car Rental JS loaded successfully!');
+            console.log('Vehicle JS loaded successfully!');
 
             // =============================================
-            // CAR TYPES - Badge Style (Input field)
+            // PRICING OPTIONS
             // =============================================
 
-            const addCarTypeBtn = document.getElementById('addCarTypeBtn');
-            const carTypeInput = document.getElementById('carTypeInput');
+            // Make selectPricing global
+            window.selectPricing = function(type) {
+                // Update active state
+                document.querySelectorAll('.pricing-option').forEach(el => {
+                    el.classList.remove('active');
+                });
+                document.querySelector(`.pricing-option[data-option="${type}"]`).classList.add('active');
 
-            // Add car type on button click
-            if (addCarTypeBtn) {
-                addCarTypeBtn.addEventListener('click', function(e) {
+                // Show/hide pricing fields
+                document.getElementById('perdayPricing').classList.remove('active');
+                document.getElementById('packagePricing').classList.remove('active');
+
+                if (type === 'perday') {
+                    document.getElementById('perdayPricing').classList.add('active');
+                    document.getElementById('pricingType').value = 'perday';
+                    // Make fields required
+                    document.getElementById('perDayAmount').required = true;
+                    document.getElementById('perKmCharge').required = true;
+                    document.getElementById('packageDays').required = false;
+                    document.getElementById('packagePrice').required = false;
+                    document.getElementById('packageKmLimit').required = false;
+                    document.getElementById('extraKmCharge').required = false;
+                } else {
+                    document.getElementById('packagePricing').classList.add('active');
+                    document.getElementById('pricingType').value = 'package';
+                    // Make fields required
+                    document.getElementById('perDayAmount').required = false;
+                    document.getElementById('perKmCharge').required = false;
+                    document.getElementById('packageDays').required = true;
+                    document.getElementById('packagePrice').required = true;
+                    document.getElementById('packageKmLimit').required = true;
+                    document.getElementById('extraKmCharge').required = true;
+                }
+            }
+
+            // =============================================
+            // VEHICLE TYPES - Badge Style (Input field)
+            // =============================================
+
+            const addVehicleTypeBtn = document.getElementById('addVehicleTypeBtn');
+            const vehicleTypeInput = document.getElementById('vehicleTypeInput');
+
+            // Add vehicle type on button click
+            if (addVehicleTypeBtn) {
+                addVehicleTypeBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    addCarType();
+                    addVehicleType();
                 });
             }
 
-            // Add car type on Enter key
-            if (carTypeInput) {
-                carTypeInput.addEventListener('keypress', function(e) {
+            // Add vehicle type on Enter key
+            if (vehicleTypeInput) {
+                vehicleTypeInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
-                        addCarType();
+                        addVehicleType();
                     }
                 });
             }
 
-            // Function to add car type
-            function addCarType() {
-                const input = document.getElementById('carTypeInput');
+            // Function to add vehicle type
+            function addVehicleType() {
+                const input = document.getElementById('vehicleTypeInput');
                 const type = input.value.trim();
 
                 if (!type) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Car Type Required',
-                        text: 'Please enter a car type',
+                        title: 'Vehicle Type Required',
+                        text: 'Please enter a vehicle type',
                         confirmButtonColor: '#0b2a3e'
                     });
                     input.focus();
                     return;
                 }
 
-                // Check if car type already exists
-                const existing = carTypes.find(c => c.toLowerCase() === type.toLowerCase());
+                // Check if vehicle type already exists
+                const existing = vehicleTypes.find(c => c.toLowerCase() === type.toLowerCase());
                 if (existing) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'Duplicate Car Type',
+                        title: 'Duplicate Vehicle Type',
                         text: `"${type}" already exists. Please enter a different type.`,
                         confirmButtonColor: '#0b2a3e'
                     });
@@ -616,44 +801,44 @@ $currentUser = getCurrentUser($pdo);
                     return;
                 }
 
-                carTypes.push(type);
-                renderCarTypes();
+                vehicleTypes.push(type);
+                renderVehicleTypes();
 
                 // Clear input and focus
                 input.value = '';
                 input.focus();
             }
 
-            // Make addCarType available globally for onclick
-            window.addCarType = addCarType;
+            // Make addVehicleType available globally for onclick
+            window.addVehicleType = addVehicleType;
 
-            // Function to remove car type
-            window.removeCarType = function(index) {
-                carTypes.splice(index, 1);
-                renderCarTypes();
+            // Function to remove vehicle type
+            window.removeVehicleType = function(index) {
+                vehicleTypes.splice(index, 1);
+                renderVehicleTypes();
             }
 
-            function renderCarTypes() {
-                const container = document.getElementById('carTypesList');
+            function renderVehicleTypes() {
+                const container = document.getElementById('vehicleTypesList');
                 container.innerHTML = '';
 
-                if (carTypes.length === 0) {
-                    container.innerHTML = '<div class="empty-badges">No car types added</div>';
+                if (vehicleTypes.length === 0) {
+                    container.innerHTML = '<div class="empty-badges">No vehicle types added</div>';
                     return;
                 }
 
-                carTypes.forEach((type, index) => {
+                vehicleTypes.forEach((type, index) => {
                     const badge = document.createElement('span');
                     badge.className = 'badge-item';
                     badge.innerHTML = `
                     <span class="badge-name">${escapeHtml(type)}</span>
-                    <span class="remove-badge" onclick="removeCarType(${index})">&times;</span>
+                    <span class="remove-badge" onclick="removeVehicleType(${index})">&times;</span>
                 `;
                     container.appendChild(badge);
                 });
 
                 // Update hidden input
-                document.getElementById('carTypes').value = JSON.stringify(carTypes);
+                document.getElementById('vehicleTypes').value = JSON.stringify(vehicleTypes);
             }
 
             // =============================================
@@ -784,40 +969,27 @@ $currentUser = getCurrentUser($pdo);
             // FORM SUBMISSION WITH AJAX
             // =============================================
 
-            const addCarForm = document.getElementById('addCarRentalForm');
-            if (addCarForm) {
-                addCarForm.addEventListener('submit', function(e) {
+            const addVehicleForm = document.getElementById('addVehicleForm');
+            if (addVehicleForm) {
+                addVehicleForm.addEventListener('submit', function(e) {
                     e.preventDefault();
 
                     // Validate required fields
-                    const carName = document.getElementById('carName').value.trim();
-                    const perDayAmount = document.getElementById('perDayAmount').value.trim();
-                    const perKmCharge = document.getElementById('perKmCharge').value.trim();
+                    const vehicleName = document.getElementById('vehicleName').value.trim();
                     const seatingCapacity = document.getElementById('seatingCapacity').value.trim();
                     const mainImage = document.getElementById('mainImage').files[0];
+                    const pricingType = document.getElementById('pricingType').value;
 
-                    // Validate car types
-                    if (carTypes.length === 0) {
-                        showAlert('Please add at least one car type', 'warning');
-                        document.getElementById('carTypeInput').focus();
+                    // Validate vehicle types
+                    if (vehicleTypes.length === 0) {
+                        showAlert('Please add at least one vehicle type', 'warning');
+                        document.getElementById('vehicleTypeInput').focus();
                         return;
                     }
 
-                    if (!carName) {
-                        showAlert('Please enter car name', 'warning');
-                        document.getElementById('carName').focus();
-                        return;
-                    }
-
-                    if (!perDayAmount || isNaN(perDayAmount) || parseFloat(perDayAmount) <= 0) {
-                        showAlert('Please enter valid per day amount', 'warning');
-                        document.getElementById('perDayAmount').focus();
-                        return;
-                    }
-
-                    if (!perKmCharge || isNaN(perKmCharge) || parseFloat(perKmCharge) <= 0) {
-                        showAlert('Please enter valid per KM charge', 'warning');
-                        document.getElementById('perKmCharge').focus();
+                    if (!vehicleName) {
+                        showAlert('Please enter vehicle name', 'warning');
+                        document.getElementById('vehicleName').focus();
                         return;
                     }
 
@@ -832,6 +1004,53 @@ $currentUser = getCurrentUser($pdo);
                         return;
                     }
 
+                    // Validate pricing fields based on type
+                    if (pricingType === 'perday') {
+                        const perDayAmount = document.getElementById('perDayAmount').value.trim();
+                        const perKmCharge = document.getElementById('perKmCharge').value.trim();
+
+                        if (!perDayAmount || isNaN(perDayAmount) || parseFloat(perDayAmount) <= 0) {
+                            showAlert('Please enter valid per day amount', 'warning');
+                            document.getElementById('perDayAmount').focus();
+                            return;
+                        }
+
+                        if (!perKmCharge || isNaN(perKmCharge) || parseFloat(perKmCharge) <= 0) {
+                            showAlert('Please enter valid per KM charge', 'warning');
+                            document.getElementById('perKmCharge').focus();
+                            return;
+                        }
+                    } else {
+                        const packageDays = document.getElementById('packageDays').value.trim();
+                        const packagePrice = document.getElementById('packagePrice').value.trim();
+                        const packageKmLimit = document.getElementById('packageKmLimit').value.trim();
+                        const extraKmCharge = document.getElementById('extraKmCharge').value.trim();
+
+                        if (!packageDays || isNaN(packageDays) || parseInt(packageDays) <= 0) {
+                            showAlert('Please enter valid package days', 'warning');
+                            document.getElementById('packageDays').focus();
+                            return;
+                        }
+
+                        if (!packagePrice || isNaN(packagePrice) || parseFloat(packagePrice) <= 0) {
+                            showAlert('Please enter valid package price', 'warning');
+                            document.getElementById('packagePrice').focus();
+                            return;
+                        }
+
+                        if (!packageKmLimit || isNaN(packageKmLimit) || parseFloat(packageKmLimit) <= 0) {
+                            showAlert('Please enter valid package KM limit', 'warning');
+                            document.getElementById('packageKmLimit').focus();
+                            return;
+                        }
+
+                        if (!extraKmCharge || isNaN(extraKmCharge) || parseFloat(extraKmCharge) <= 0) {
+                            showAlert('Please enter valid extra KM charge', 'warning');
+                            document.getElementById('extraKmCharge').focus();
+                            return;
+                        }
+                    }
+
                     // Show loading state
                     const submitBtn = document.getElementById('submitBtn');
                     const submitText = document.getElementById('submitText');
@@ -842,15 +1061,29 @@ $currentUser = getCurrentUser($pdo);
 
                     // Prepare form data
                     const formData = new FormData();
-                    formData.append('car_name', carName);
-                    formData.append('car_model', document.getElementById('carModel').value.trim());
-                    formData.append('car_brand', document.getElementById('carBrand').value.trim());
+                    formData.append('vehicle_name', vehicleName);
+                    formData.append('vehicle_model', document.getElementById('vehicleModel').value.trim());
+                    formData.append('vehicle_brand', document.getElementById('vehicleBrand').value.trim());
+                    formData.append('vehicle_types', JSON.stringify(vehicleTypes));
+                    formData.append('pricing_type', pricingType);
 
-                    // Send car types as JSON
-                    formData.append('car_types', JSON.stringify(carTypes));
+                    // Pricing fields
+                    if (pricingType === 'perday') {
+                        formData.append('per_day_amount', document.getElementById('perDayAmount').value.trim());
+                        formData.append('per_km_charge', document.getElementById('perKmCharge').value.trim());
+                        formData.append('package_days', '');
+                        formData.append('package_price', '');
+                        formData.append('package_km_limit', '');
+                        formData.append('extra_km_charge', '');
+                    } else {
+                        formData.append('per_day_amount', '');
+                        formData.append('per_km_charge', '');
+                        formData.append('package_days', document.getElementById('packageDays').value.trim());
+                        formData.append('package_price', document.getElementById('packagePrice').value.trim());
+                        formData.append('package_km_limit', document.getElementById('packageKmLimit').value.trim());
+                        formData.append('extra_km_charge', document.getElementById('extraKmCharge').value.trim());
+                    }
 
-                    formData.append('per_day_amount', perDayAmount);
-                    formData.append('per_km_charge', perKmCharge);
                     formData.append('fuel_type', document.getElementById('fuelType').value);
                     formData.append('transmission', document.getElementById('transmission').value);
                     formData.append('seating_capacity', seatingCapacity);
@@ -868,7 +1101,7 @@ $currentUser = getCurrentUser($pdo);
                     }
 
                     // AJAX request
-                    fetch('ajax/add-car-rental.php', {
+                    fetch('ajax/add-vehicle.php', {
                             method: 'POST',
                             body: formData
                         })
@@ -883,16 +1116,16 @@ $currentUser = getCurrentUser($pdo);
                                 showAlert(data.message, 'success');
                                 // Reset form after delay
                                 setTimeout(() => {
-                                    document.getElementById('addCarRentalForm').reset();
+                                    document.getElementById('addVehicleForm').reset();
                                     document.getElementById('mainImagePreview').innerHTML = '';
                                     document.getElementById('additionalImagesPreview').innerHTML = '';
-                                    // Reset car types
-                                    carTypes = [];
-                                    renderCarTypes();
+                                    // Reset vehicle types
+                                    vehicleTypes = [];
+                                    renderVehicleTypes();
                                     // Set default seating capacity again
                                     document.getElementById('seatingCapacity').value = 4;
-                                    // Redirect to car rentals list
-                                    window.location.href = 'car-rentals.php';
+                                    // Redirect to vehicles list
+                                    window.location.href = 'vehicle.php';
                                 }, 2000);
                             } else {
                                 showAlert(data.message, 'error');

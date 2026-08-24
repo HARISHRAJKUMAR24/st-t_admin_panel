@@ -684,7 +684,7 @@ $carRentals = getCarRentals($pdo, 6);
 
   <!-- ====== TRAVEL PACKAGES ====== -->
   <section id="travel">
-    <?php include './sections/car-rental-booking.php'; ?>
+    <?php include './sections/boat-booking.php'; ?>
   </section>
 
 

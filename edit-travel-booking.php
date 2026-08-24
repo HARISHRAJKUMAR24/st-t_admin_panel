@@ -8,15 +8,21 @@ if (!verifyToken($pdo)) {
     exit();
 }
 
-$bookingCode = isset($_GET['booking_id']) ? trim($_GET['booking_id']) : '';
+$currentUser = getCurrentUser($pdo);
+$currencyCode = getCurrencyCode($pdo);
+$currencySymbol = getCurrencySymbol($currencyCode);
 
-if (empty($bookingCode)) {
+// Get booking ID
+$bookingId = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if ($bookingId <= 0) {
     header("Location: travel-bookings.php");
     exit();
 }
 
-$stmt = $pdo->prepare("SELECT * FROM travel_bookings WHERE booking_id = ?");
-$stmt->execute([$bookingCode]);
+// Fetch booking data
+$stmt = $pdo->prepare("SELECT * FROM travel_bookings WHERE id = ?");
+$stmt->execute([$bookingId]);
 $booking = $stmt->fetch();
 
 if (!$booking) {
@@ -24,17 +30,43 @@ if (!$booking) {
     exit();
 }
 
-$currentUser = getCurrentUser($pdo);
-$pageTitle = "Edit Travel Booking";
-
-$currencyCode = getCurrencyCode($pdo);
-$currencySymbol = getCurrencySymbol($currencyCode);
-
-$stmt = $pdo->query("SELECT id, car_name, car_image, per_day_amount, per_km_charge, seating_capacity, car_type, car_brand FROM car_rentals WHERE status = 'available' ORDER BY car_name ASC");
-$cars = $stmt->fetchAll();
-
+// Decode stops and what_we_provide
 $stops = json_decode($booking['stops'], true) ?: [];
-$provide = json_decode($booking['what_we_provide'], true) ?: [];
+$whatWeProvide = json_decode($booking['what_we_provide'], true) ?: [];
+
+// Fetch vehicles from database
+$stmt = $pdo->query("SELECT id, vehicle_name, vehicle_image, per_day_amount, per_km_charge, seating_capacity, vehicle_type, vehicle_brand, pricing_type, package_days, package_price, package_km_limit, extra_km_charge FROM vehicles WHERE status = 'available' ORDER BY vehicle_name ASC");
+$vehicles = $stmt->fetchAll();
+
+// Force vehicle options
+$forceVehicles = [
+    'urbania' => [
+        'name' => 'Force Urbania',
+        'seats' => [10 => '10-Seater (Driver + 9 passengers)', 13 => '13-Seater (Driver + 12 passengers)', 17 => '17-Seater (Driver + 16 passengers)']
+    ],
+    'traveller' => [
+        'name' => 'Force Traveller',
+        'seats' => [9 => '9-Seater (Driver + 8 passengers)', 12 => '12-Seater (Driver + 11 passengers)', 13 => '13-Seater (Driver + 12 passengers)', 14 => '14-Seater (Driver + 13 passengers)', 17 => '17-Seater (Driver + 16 passengers)', 20 => '20-Seater (Driver + 19 passengers)', 26 => '26-Seater (Driver + 25 passengers)']
+    ],
+    'trax' => [
+        'name' => 'Force Trax Cruiser',
+        'seats' => [10 => '10-Seater (Driver + 9 passengers)', 12 => '12-Seater (Driver + 11 passengers)', 13 => '13-Seater (Driver + 12 passengers)']
+    ]
+];
+
+// Helper function to get full image URL
+function getImageUrl($path)
+{
+    if (empty($path)) {
+        return '';
+    }
+    $path = ltrim($path, './');
+    $path = str_replace('../', '', $path);
+    return APP_URL . $path;
+}
+
+// Get existing vehicle image
+$vehicleImageFullUrl = getImageUrl($booking['vehicle_image'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -42,10 +74,12 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 <head>
     <?php include_once 'includes/head_links.php'; ?>
     <title>Edit Travel Booking · Tour Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* All styles remain the same */
         .page-wrapper {
             padding: 20px;
         }
@@ -64,20 +98,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         .page-header p {
             color: #5f7d92;
             font-size: 0.85rem;
-        }
-
-        .back-link {
-            display: inline-block;
-            color: #5f7d92;
-            text-decoration: none;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
-            transition: color 0.2s;
-        }
-
-        .back-link:hover {
-            color: #123b4f;
-            text-decoration: none;
         }
 
         .form-container {
@@ -146,6 +166,53 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             cursor: not-allowed;
         }
 
+        .vehicle-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .vehicle-option-card {
+            padding: 15px;
+            border: 2px solid #e8edf3;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .vehicle-option-card:hover {
+            border-color: #ffd966;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .vehicle-option-card.active {
+            border-color: #ffd966;
+            background: rgba(255, 215, 100, 0.1);
+            box-shadow: 0 0 0 4px rgba(255, 215, 100, 0.1);
+        }
+
+        .vehicle-option-card .card-icon {
+            font-size: 1.8rem;
+            color: #123b4f;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .vehicle-option-card .card-title {
+            font-weight: 600;
+            color: #123b4f;
+            font-size: 0.85rem;
+        }
+
+        .vehicle-option-card .card-desc {
+            color: #5f7d92;
+            font-size: 0.65rem;
+        }
+
         .stop-card {
             background: rgba(255, 255, 255, 0.5);
             border: 2px solid #e8edf3;
@@ -206,13 +273,37 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             background: rgba(220, 53, 69, 0.08);
         }
 
-        .stop-card .stop-price {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #28a745;
+        .stop-card .stop-price-row {
+            display: flex;
+            gap: 12px;
             margin-top: 8px;
             padding-top: 8px;
             border-top: 1px dashed #e8edf3;
+            flex-wrap: wrap;
+        }
+
+        .stop-card .stop-price-row .form-group {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stop-card .stop-price-row .form-group label {
+            font-size: 0.7rem;
+            color: #5f7d92;
+            font-weight: 500;
+        }
+
+        .stop-card .stop-price-row .form-group .form-control {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+        }
+
+        .stop-card .stop-total-price {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #28a745;
+            margin-top: 6px;
+            text-align: right;
         }
 
         .btn-add-stop {
@@ -462,15 +553,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             transform: translateY(-1px);
         }
 
-        .badge-item .badge-icon {
-            width: 22px;
-            height: 22px;
-            object-fit: contain;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.5);
-            padding: 2px;
-        }
-
         .badge-item .badge-name {
             margin: 0 2px;
         }
@@ -490,21 +572,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             color: #c82333;
         }
 
-        .badge-input {
-            border: none;
-            background: transparent;
-            padding: 4px 8px;
-            flex: 1;
-            min-width: 120px;
-            outline: none;
-            font-size: 0.85rem;
-            color: #123b4f;
-        }
-
-        .badge-input::placeholder {
-            color: #9bb2c5;
-        }
-
         .empty-badges {
             color: #9bb2c5;
             font-size: 0.8rem;
@@ -513,32 +580,215 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             text-align: center;
         }
 
-        .feature-icon-upload-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            border: 2px dashed #e8edf3;
-            border-radius: 8px;
-            padding: 0.3rem 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.4);
-            min-height: 38px;
+        .distance-label {
+            background: transparent !important;
+            border: none !important;
         }
 
-        .feature-icon-upload-box:hover {
+        .seat-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .seat-option {
+            padding: 4px 12px;
+            border: 2px solid #e8edf3;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #5f7d92;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .seat-option:hover {
+            border-color: #ffd966;
+            color: #123b4f;
+        }
+
+        .seat-option.active {
+            border-color: #ffd966;
+            background: rgba(255, 215, 100, 0.15);
+            color: #123b4f;
+        }
+
+        .vehicle-selection-wrapper {
+            background: rgba(255, 255, 255, 0.4);
+            border: 2px solid #e8edf3;
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .vehicle-selection-wrapper:focus-within {
+            border-color: #ffd966;
+        }
+
+        .vehicle-image-upload {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .vehicle-image-upload .image-upload-box {
+            border: 2px dashed #e8edf3;
+            border-radius: 10px;
+            padding: 0.8rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.4);
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .vehicle-image-upload .image-upload-box:hover {
             border-color: #ffd966;
             background: rgba(255, 215, 100, 0.05);
         }
 
-        .feature-icon-upload-box.has-file {
-            border-color: #28a745;
-            background: rgba(40, 167, 69, 0.05);
+        .vehicle-image-upload .image-upload-box i {
+            font-size: 1.8rem;
+            color: #9bb2c5;
         }
 
-        .distance-label {
-            background: transparent !important;
-            border: none !important;
+        .vehicle-image-upload .image-upload-box p {
+            color: #5f7d92;
+            font-size: 0.7rem;
+            margin-bottom: 0;
+        }
+
+        .vehicle-image-upload .image-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e8edf3;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .vehicle-image-upload .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .vehicle-image-upload .image-preview.show {
+            display: block;
+        }
+
+        .existing-image-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            border: 2px solid #e8edf3;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .existing-image-container img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e8edf3;
+        }
+
+        .auto-fill-btn {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border: 1px solid #28a745;
+            border-radius: 6px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .auto-fill-btn:hover {
+            background: #28a745;
+            color: white;
+        }
+
+        .force-image-upload {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #e8edf3;
+        }
+
+        .force-image-upload .image-upload-box {
+            border: 2px dashed #e8edf3;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.4);
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .force-image-upload .image-upload-box:hover {
+            border-color: #ffd966;
+            background: rgba(255, 215, 100, 0.05);
+        }
+
+        .force-image-upload .image-upload-box i {
+            font-size: 1.5rem;
+            color: #9bb2c5;
+        }
+
+        .force-image-upload .image-upload-box p {
+            color: #5f7d92;
+            font-size: 0.65rem;
+            margin-bottom: 0;
+        }
+
+        .force-image-upload .image-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid #e8edf3;
+            flex-shrink: 0;
+            display: none;
+        }
+
+        .force-image-upload .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .force-image-upload .image-preview.show {
+            display: block;
+        }
+
+        .force-image-upload .preview-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
         }
 
         @keyframes badgeIn {
@@ -546,7 +796,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 opacity: 0;
                 transform: scale(0.8);
             }
-
             to {
                 opacity: 1;
                 transform: scale(1);
@@ -557,49 +806,57 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             .page-wrapper {
                 padding: 10px;
             }
-
             .form-container {
                 padding: 1rem;
             }
-
             .form-actions {
                 flex-direction: column;
             }
-
             .form-actions .btn {
                 width: 100%;
                 justify-content: center;
             }
-
             .row-2col {
                 grid-template-columns: 1fr;
                 gap: 10px;
             }
-
             #map {
                 height: 250px;
             }
-
             .price-input-group {
                 flex-direction: column;
             }
-
             .price-input-group .form-group {
                 min-width: 100%;
             }
-
             .badge-input-row {
                 flex-direction: column;
                 align-items: stretch;
             }
-
             .badge-input-row .form-control {
                 min-width: unset;
             }
-
-            .feature-icon-upload-box {
+            .vehicle-options {
+                grid-template-columns: 1fr 1fr;
+            }
+            .vehicle-image-upload {
+                flex-direction: column;
+            }
+            .vehicle-image-upload .image-upload-box {
                 width: 100%;
-                justify-content: center;
+            }
+            .stop-card .stop-price-row {
+                flex-direction: column;
+            }
+            .stop-card .stop-price-row .form-group {
+                min-width: 100%;
+            }
+            .force-image-upload .preview-wrapper {
+                flex-direction: column;
+            }
+            .existing-image-container {
+                flex-direction: column;
+                text-align: center;
             }
         }
     </style>
@@ -625,57 +882,186 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
             <div class="page-header">
                 <h4><i class="bi bi-pencil-square me-2" style="color:#f5b342;"></i>Edit Travel Booking</h4>
-                <p>Update booking - <?= htmlspecialchars($booking['booking_id']) ?></p>
+                <p>Update vehicle, stops, and booking details</p>
             </div>
 
             <div class="form-container">
-                <form id="travelBookingForm" enctype="multipart/form-data">
+                <form id="editTravelBookingForm" enctype="multipart/form-data">
                     <input type="hidden" id="bookingId" value="<?= $booking['id'] ?>">
-                    <input type="hidden" id="bookingCode" value="<?= $booking['booking_id'] ?>">
 
                     <div class="row-2col">
                         <!-- Left Column -->
                         <div>
+                            <!-- Vehicle Selection -->
                             <div class="section-title">
-                                <i class="bi bi-car-front"></i> Car Details
+                                <i class="bi bi-car-front"></i> Select Vehicle
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Car Name <span class="required">*</span></label>
-                                <select class="form-select" id="carSelect" required>
-                                    <option value="">-- Select a Car --</option>
-                                    <?php foreach ($cars as $car): ?>
-                                        <option value="<?= $car['id'] ?>"
-                                            data-name="<?= htmlspecialchars($car['car_name']) ?>"
-                                            data-type="<?= htmlspecialchars($car['car_type'] ?? 'Sedan') ?>"
-                                            data-brand="<?= htmlspecialchars($car['car_brand'] ?? '') ?>"
-                                            data-price="<?= $car['per_day_amount'] ?>"
-                                            data-perkm="<?= $car['per_km_charge'] ?>"
-                                            data-seats="<?= $car['seating_capacity'] ?>"
-                                            <?= $car['id'] == $booking['car_id'] ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($car['car_name']) ?> - <?= htmlspecialchars($car['car_type'] ?? 'Sedan') ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                            <!-- Vehicle Option Cards -->
+                            <div class="vehicle-options">
+                                <div class="vehicle-option-card active" data-option="db" onclick="selectVehicleOption('db')">
+                                    <span class="card-icon"><i class="bi bi-database"></i></span>
+                                    <div class="card-title">From Database</div>
+                                    <div class="card-desc">Select from existing vehicles</div>
+                                </div>
+                                <div class="vehicle-option-card" data-option="urbania" onclick="selectVehicleOption('urbania')">
+                                    <span class="card-icon"><i class="bi bi-truck"></i></span>
+                                    <div class="card-title">Force Urbania</div>
+                                    <div class="card-desc">10, 13, 17 Seater</div>
+                                </div>
+                                <div class="vehicle-option-card" data-option="traveller" onclick="selectVehicleOption('traveller')">
+                                    <span class="card-icon"><i class="bi bi-truck-front"></i></span>
+                                    <div class="card-title">Force Traveller</div>
+                                    <div class="card-desc">9, 12, 13, 14, 17, 20, 26 Seater</div>
+                                </div>
+                                <div class="vehicle-option-card" data-option="trax" onclick="selectVehicleOption('trax')">
+                                    <span class="card-icon"><i class="bi bi-truck"></i></span>
+                                    <div class="card-title">Force Trax Cruiser</div>
+                                    <div class="card-desc">10, 12, 13 Seater</div>
+                                </div>
+                                <div class="vehicle-option-card" data-option="custom" onclick="selectVehicleOption('custom')">
+                                    <span class="card-icon"><i class="bi bi-pencil-square"></i></span>
+                                    <div class="card-title">Custom</div>
+                                    <div class="card-desc">Manual vehicle entry</div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Car Name <span class="required">*</span></label>
-                                <input type="text" class="form-control" id="carName" value="<?= htmlspecialchars($booking['car_name']) ?>" readonly required>
+                            <!-- Vehicle Selection Area -->
+                            <div class="vehicle-selection-wrapper" id="vehicleSelectionWrapper">
+                                <!-- Database Vehicles -->
+                                <div id="dbVehicles">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Vehicle <span class="required">*</span></label>
+                                        <select class="form-select" id="dbVehicleSelect" onchange="selectDbVehicle(this)">
+                                            <option value="">-- Select a Vehicle --</option>
+                                            <?php foreach ($vehicles as $vehicle): ?>
+                                                <option value="<?= $vehicle['id'] ?>"
+                                                    data-name="<?= htmlspecialchars($vehicle['vehicle_name']) ?>"
+                                                    data-type="<?= htmlspecialchars($vehicle['vehicle_type'] ?? 'Sedan') ?>"
+                                                    data-brand="<?= htmlspecialchars($vehicle['vehicle_brand'] ?? '') ?>"
+                                                    data-price="<?= $vehicle['per_day_amount'] ?>"
+                                                    data-perkm="<?= $vehicle['per_km_charge'] ?>"
+                                                    data-seats="<?= $vehicle['seating_capacity'] ?>"
+                                                    data-pricing="<?= $vehicle['pricing_type'] ?? 'perday' ?>"
+                                                    data-package-days="<?= $vehicle['package_days'] ?? '' ?>"
+                                                    data-package-price="<?= $vehicle['package_price'] ?? '' ?>"
+                                                    data-package-km="<?= $vehicle['package_km_limit'] ?? '' ?>"
+                                                    data-extra-km="<?= $vehicle['extra_km_charge'] ?? '' ?>">
+                                                    <?= htmlspecialchars($vehicle['vehicle_name']) ?> - <?= htmlspecialchars($vehicle['vehicle_type'] ?? 'Sedan') ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Force Vehicles -->
+                                <div id="forceVehicles" style="display:none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Force Vehicle <span class="required">*</span></label>
+                                        <select class="form-select" id="forceVehicleSelect" onchange="selectForceVehicle(this)">
+                                            <option value="">-- Select Force Vehicle --</option>
+                                            <option value="urbania">Force Urbania</option>
+                                            <option value="traveller">Force Traveller</option>
+                                            <option value="trax">Force Trax Cruiser</option>
+                                        </select>
+                                    </div>
+                                    <div id="seatOptionsContainer" style="display:none;">
+                                        <label class="form-label">Select Seating <span class="required">*</span></label>
+                                        <div class="seat-options" id="seatOptions"></div>
+                                    </div>
+                                    <!-- Force Vehicle Image Upload -->
+                                    <div class="force-image-upload" id="forceImageUpload" style="display:none;">
+                                        <label class="form-label">Vehicle Image <span class="required">*</span></label>
+                                        <div class="preview-wrapper">
+                                            <div class="image-upload-box" id="forceImageBox">
+                                                <i class="bi bi-cloud-upload"></i>
+                                                <p>Upload Image<br><small>JPG, PNG, WebP</small></p>
+                                                <input type="file" id="forceImage" accept="image/*" style="display:none;">
+                                            </div>
+                                            <div class="image-preview" id="forceImagePreview">
+                                                <img id="forceImagePreviewImg" src="" alt="Vehicle Image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Vehicle -->
+                                <div id="customVehicle" style="display:none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Vehicle Name <span class="required">*</span></label>
+                                        <input type="text" class="form-control" id="customVehicleName" placeholder="Enter vehicle name">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Seating Capacity <span class="required">*</span></label>
+                                        <input type="number" class="form-control" id="customSeats" placeholder="Number of seats" min="1">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Vehicle Type</label>
+                                        <input type="text" class="form-control" id="customVehicleType" placeholder="e.g., Luxury, Mini, SUV">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Vehicle Image <span class="required">*</span></label>
+                                        <div class="vehicle-image-upload">
+                                            <div class="image-upload-box" id="vehicleImageBox">
+                                                <i class="bi bi-cloud-upload"></i>
+                                                <p>Upload Image<br><small>JPG, PNG, WebP</small></p>
+                                                <input type="file" id="vehicleImage" accept="image/*" style="display:none;">
+                                            </div>
+                                            <div class="image-preview" id="vehicleImagePreview">
+                                                <img id="vehicleImagePreviewImg" src="" alt="Vehicle Image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Car Type</label>
-                                <input type="text" class="form-control" id="carType" value="<?= htmlspecialchars($booking['car_type'] ?? 'Sedan') ?>" readonly>
+                            <!-- Existing Vehicle Image Display -->
+                            <?php if (!empty($booking['vehicle_image'])): ?>
+                                <div class="existing-image-container" id="existingVehicleImage">
+                                    <img src="<?= $vehicleImageFullUrl ?>" alt="Vehicle Image">
+                                    <div>
+                                        <div><small>Current Vehicle Image</small></div>
+                                        <button type="button" class="btn btn-danger btn-sm mt-1" onclick="removeExistingVehicleImage()">
+                                            <i class="bi bi-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Hidden fields for selected vehicle -->
+                            <input type="hidden" id="selectedVehicleId" value="<?= $booking['car_id'] ?>">
+                            <input type="hidden" id="selectedVehicleName" value="<?= htmlspecialchars($booking['car_name']) ?>">
+                            <input type="hidden" id="selectedVehicleType" value="<?= htmlspecialchars($booking['car_type']) ?>">
+                            <input type="hidden" id="selectedSeats" value="<?= $booking['seat_count'] ?>">
+                            <input type="hidden" id="selectedPricingType" value="perday">
+                            <input type="hidden" id="selectedPerDayAmount" value="<?= $booking['per_day_price'] ?>">
+                            <input type="hidden" id="selectedPerKmCharge" value="<?= $booking['per_km_charge'] ?>">
+
+                            <!-- Vehicle Details Display -->
+                            <div id="vehicleDetails" style="display:block; margin-top:15px; padding:15px; background:rgba(255,255,255,0.5); border-radius:12px; border:2px solid #e8edf3;">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Vehicle Name</label>
+                                        <input type="text" class="form-control" id="displayVehicleName" readonly value="<?= htmlspecialchars($booking['car_name']) ?>">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Seats</label>
+                                        <input type="text" class="form-control" id="displaySeats" readonly value="<?= $booking['seat_count'] ?> Seats">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Type</label>
+                                        <input type="text" class="form-control" id="displayVehicleType" readonly value="<?= htmlspecialchars($booking['car_type']) ?>">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Pricing Type</label>
+                                        <input type="text" class="form-control" id="displayPricingType" readonly value="Per Day + KM">
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Seat Count <span class="required">*</span></label>
-                                <input type="number" class="form-control" id="seatCount" value="<?= $booking['seat_count'] ?>" readonly>
-                            </div>
-
+                            <!-- Pricing Section -->
                             <div class="section-title mt-3">
-                                <i class="bi bi-tag"></i> Pricing
+                                <i class="bi bi-tag"></i> Pricing (Manual Entry)
                             </div>
 
                             <div class="price-input-group">
@@ -685,7 +1071,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                                         <span class="input-group-text" style="border-radius:10px 0 0 10px;border:2px solid #e8edf3;border-right:none;background:rgba(255,255,255,0.6);font-weight:600;">
                                             <?= htmlspecialchars($currencySymbol) ?>
                                         </span>
-                                        <input type="number" class="form-control" id="pricePerDay" value="<?= $booking['per_day_price'] ?>" step="0.01" style="border-radius:0 10px 10px 0;">
+                                        <input type="number" class="form-control" id="pricePerDay" step="0.01" value="<?= $booking['per_day_price'] ?>" style="border-radius:0 10px 10px 0;">
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -694,61 +1080,50 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                                         <span class="input-group-text" style="border-radius:10px 0 0 10px;border:2px solid #e8edf3;border-right:none;background:rgba(255,255,255,0.6);font-weight:600;">
                                             <?= htmlspecialchars($currencySymbol) ?>
                                         </span>
-                                        <input type="number" class="form-control" id="perKmCharge" value="<?= $booking['per_km_charge'] ?>" step="0.01" style="border-radius:0 10px 10px 0;">
+                                        <input type="number" class="form-control" id="perKmCharge" step="0.01" value="<?= $booking['per_km_charge'] ?>" style="border-radius:0 10px 10px 0;">
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3 mt-2">
+                            <div class="mb-3 mt-3">
                                 <label class="form-label">Number of Days <span class="required">*</span></label>
                                 <input type="number" class="form-control" id="days" value="<?= $booking['days'] ?>" min="1" required>
                             </div>
 
-                            <!-- What We Provide -->
+                            <!-- What We Provide - TEXT ONLY -->
                             <div class="section-title mt-3">
                                 <i class="bi bi-check-circle"></i> What We Provide
-                                <span class="badge-count" id="provideCount"><?= count($provide) ?> Items</span>
                             </div>
 
                             <div class="mb-3">
                                 <div class="badge-input-wrapper">
                                     <div class="badge-input-row">
                                         <input type="text" class="form-control" id="provideInput" placeholder="Enter item name" style="flex:1;">
-                                        <div style="display:flex;gap:6px;align-items:center;">
-                                            <label for="provideIcon" class="feature-icon-upload-box" id="provideIconBox">
-                                                <i class="bi bi-image" style="font-size:1rem;color:#9bb2c5;"></i>
-                                                <span id="provideIconLabel" style="font-size:0.7rem;color:#5f7d92;white-space:nowrap;">Upload Icon</span>
-                                            </label>
-                                            <input type="file" id="provideIcon" accept="image/*" style="display:none;">
-                                            <button type="button" class="btn-sm-primary" onclick="addProvideItem()" style="background:#ffd966;color:#123b4f;border:none;border-radius:8px;padding:0.4rem 1.2rem;font-weight:600;font-size:0.8rem;cursor:pointer;">
-                                                <i class="bi bi-plus-circle"></i> Add
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div id="provideIconPreview" class="mt-2" style="display:none;">
-                                        <span style="background:rgba(40,167,69,0.1);color:#28a745;padding:0.2rem 0.8rem;border-radius:12px;font-size:0.75rem;display:inline-flex;align-items:center;gap:6px;">
-                                            <img id="provideIconPreviewImg" src="" style="width:18px;height:18px;object-fit:contain;border-radius:4px;">
-                                            <span id="provideIconPreviewName"></span>
-                                            <button type="button" onclick="removeProvideIconPreview()" style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;padding:0 4px;">×</button>
-                                        </span>
+                                        <button type="button" class="btn-sm-primary" onclick="addProvideItem()" style="background:#ffd966;color:#123b4f;border:none;border-radius:8px;padding:0.4rem 1.2rem;font-weight:600;font-size:0.8rem;cursor:pointer;">
+                                            <i class="bi bi-plus-circle"></i> Add
+                                        </button>
                                     </div>
                                     <div class="badges-container" id="provideContainer">
-                                        <?php if (empty($provide)): ?>
-                                            <div class="empty-badges">No items added</div>
-                                        <?php else: ?>
-                                            <?php foreach ($provide as $index => $item): ?>
-                                                <span class="badge-item" data-provide-index="<?= $index ?>">
-                                                    <?php if (!empty($item['icon'])): ?>
-                                                        <img src="<?= APP_URL . $item['icon'] ?>" class="badge-icon" alt="icon">
-                                                    <?php endif; ?>
-                                                    <span class="badge-name"><?= htmlspecialchars($item['name']) ?></span>
-                                                    <span class="remove-badge" onclick="removeProvideItem(<?= $index ?>)">&times;</span>
-                                                </span>
+                                        <?php if (!empty($whatWeProvide) && is_array($whatWeProvide)): ?>
+                                            <?php foreach ($whatWeProvide as $index => $item): ?>
+                                                <?php if (is_string($item)): ?>
+                                                    <span class="badge-item" id="provide-badge-<?= $index ?>">
+                                                        <span class="badge-name"><?= htmlspecialchars($item) ?></span>
+                                                        <span class="remove-badge" onclick="removeProvideItem(<?= $index ?>)">&times;</span>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge-item" id="provide-badge-<?= $index ?>">
+                                                        <span class="badge-name"><?= htmlspecialchars($item['name'] ?? '') ?></span>
+                                                        <span class="remove-badge" onclick="removeProvideItem(<?= $index ?>)">&times;</span>
+                                                    </span>
+                                                <?php endif; ?>
                                             <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <div class="empty-badges">No items added</div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <small class="text-muted" style="font-size:0.7rem;">Add what you provide with optional icons (JPG, PNG, WebP)</small>
+                                <small class="text-muted" style="font-size:0.7rem;">Add items that you provide with this travel package</small>
                             </div>
                         </div>
 
@@ -761,35 +1136,57 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
                             <div id="stopsContainer">
                                 <?php foreach ($stops as $index => $stop): ?>
-                                    <div class="stop-card" id="stop-<?= $index + 1 ?>">
+                                    <?php $stopNumber = $index + 1; ?>
+                                    <div class="stop-card" id="stop-<?= $stopNumber ?>">
                                         <div class="stop-header">
                                             <span class="stop-label">
-                                                <span class="stop-number"><?= $index + 1 ?></span>
-                                                Stop <?= $index + 1 ?>
+                                                <span class="stop-number"><?= $stopNumber ?></span>
+                                                Stop <?= $stopNumber ?>
                                             </span>
-                                            <button type="button" class="remove-stop" onclick="removeStop('stop-<?= $index + 1 ?>')">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
+                                            <?php if (count($stops) > 1): ?>
+                                                <button type="button" class="remove-stop" onclick="removeStop('stop-<?= $stopNumber ?>')">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                         <div class="pickup-drop-row">
                                             <div class="form-group">
                                                 <label class="form-label">Pickup <span class="required">*</span></label>
                                                 <div class="autocomplete-container">
-                                                    <input type="text" class="form-control pickup-input" value="<?= htmlspecialchars($stop['pickup']) ?>" placeholder="Enter pickup">
+                                                    <input type="text" class="form-control pickup-input" placeholder="Enter pickup" value="<?= htmlspecialchars($stop['pickup'] ?? '') ?>">
                                                     <div class="autocomplete-dropdown pickup-dropdown"></div>
                                                 </div>
                                             </div>
                                             <div class="form-group">
                                                 <label class="form-label">Drop <span class="required">*</span></label>
                                                 <div class="autocomplete-container">
-                                                    <input type="text" class="form-control drop-input" value="<?= htmlspecialchars($stop['drop']) ?>" placeholder="Enter drop">
+                                                    <input type="text" class="form-control drop-input" placeholder="Enter drop" value="<?= htmlspecialchars($stop['drop'] ?? '') ?>">
                                                     <div class="autocomplete-dropdown drop-dropdown"></div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="stop-price">
-                                            Distance: <span class="stop-distance"><?= isset($stop['distance']) ? number_format($stop['distance'], 1) : '--' ?></span> km |
-                                            Price: <span class="stop-price-amount"><?= htmlspecialchars($currencySymbol) ?><?= isset($stop['price']) ? number_format($stop['price'], 2) : '0.00' ?></span>
+                                        <div class="stop-price-row">
+                                            <div class="form-group">
+                                                <label class="form-label">Distance (km) <span class="required">*</span></label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control stop-distance-input" step="0.01" placeholder="0.00" value="<?= $stop['distance'] ?? 0 ?>">
+                                                    <button type="button" class="auto-fill-btn" onclick="autoFillDistance(<?= $stopNumber ?>)">
+                                                        <i class="bi bi-geo-alt"></i> Auto
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Price for this Stop <span class="required">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text" style="border-radius:10px 0 0 10px;border:2px solid #e8edf3;border-right:none;background:rgba(255,255,255,0.6);font-weight:600;">
+                                                        <?= htmlspecialchars($currencySymbol) ?>
+                                                    </span>
+                                                    <input type="number" class="form-control stop-price-input" step="0.01" placeholder="0.00" value="<?= $stop['price'] ?? 0 ?>" style="border-radius:0 10px 10px 0;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="stop-total-price">
+                                            Total: <span class="stop-total-amount"><?= htmlspecialchars($currencySymbol) ?><?= number_format($stop['price'] ?? 0, 2) ?></span>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -813,17 +1210,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                         </div>
                     </div>
 
-                    <!-- Status -->
-                    <div class="mt-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" id="status" style="max-width:300px;">
-                            <option value="pending" <?= $booking['status'] == 'pending' ? 'selected' : '' ?>>Pending</option>
-                            <option value="confirmed" <?= $booking['status'] == 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                            <option value="cancelled" <?= $booking['status'] == 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
-                            <option value="completed" <?= $booking['status'] == 'completed' ? 'selected' : '' ?>>Completed</option>
-                        </select>
-                    </div>
-
                     <!-- Form Actions -->
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" onclick="window.location.href='travel-bookings.php'">
@@ -840,12 +1226,11 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= APP_URL ?>javascript/main.js"></script>
     <script>
         // =============================================
-        // EDIT TRAVEL BOOKING - COMPLETE JAVASCRIPT
+        // EDIT TRAVEL BOOKING - JAVASCRIPT
         // =============================================
 
         let map;
@@ -853,123 +1238,133 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         let markers = [];
         let stopCoords = {};
         let provideItems = [];
-        let deletedProvideItems = [];
-        let currentIconFile = null;
-        let currentIconPreview = null;
         let routeColors = ['#f5b342', '#4CAF50', '#2196F3', '#9C27B0', '#FF5722', '#00BCD4', '#FF9800', '#8BC34A'];
+        let selectedOption = 'db';
+        let vehicleImageFile = null;
+        let forceImageFile = null;
 
-        // =============================================
-        // CAR SELECTION
-        // =============================================
+        // Load existing provide items (simple array of strings)
+        <?php if (!empty($whatWeProvide) && is_array($whatWeProvide)): ?>
+            <?php if (isset($whatWeProvide[0]) && is_string($whatWeProvide[0])): ?>
+                provideItems = <?= json_encode($whatWeProvide) ?>;
+            <?php else: ?>
+                provideItems = <?= json_encode(array_column($whatWeProvide, 'name')) ?>;
+            <?php endif; ?>
+        <?php endif; ?>
 
-        document.getElementById('carSelect').addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            if (this.value) {
-                document.getElementById('carName').value = selected.dataset.name;
-                document.getElementById('carType').value = selected.dataset.type || 'Sedan';
-                document.getElementById('seatCount').value = selected.dataset.seats || 4;
-                document.getElementById('pricePerDay').value = selected.dataset.price || 0;
-                document.getElementById('perKmCharge').value = selected.dataset.perkm || 0;
-            } else {
-                document.getElementById('carName').value = '';
-                document.getElementById('carType').value = '';
-                document.getElementById('seatCount').value = '';
-                document.getElementById('pricePerDay').value = '';
-                document.getElementById('perKmCharge').value = '';
+        // Force vehicle seat options
+        const forceSeats = {
+            'urbania': {
+                10: '10-Seater (Driver + 9 passengers)',
+                13: '13-Seater (Driver + 12 passengers)',
+                17: '17-Seater (Driver + 16 passengers)'
+            },
+            'traveller': {
+                9: '9-Seater (Driver + 8 passengers)',
+                12: '12-Seater (Driver + 11 passengers)',
+                13: '13-Seater (Driver + 12 passengers)',
+                14: '14-Seater (Driver + 13 passengers)',
+                17: '17-Seater (Driver + 16 passengers)',
+                20: '20-Seater (Driver + 19 passengers)',
+                26: '26-Seater (Driver + 25 passengers)'
+            },
+            'trax': {
+                10: '10-Seater (Driver + 9 passengers)',
+                12: '12-Seater (Driver + 11 passengers)',
+                13: '13-Seater (Driver + 12 passengers)'
             }
-        });
+        };
 
-        document.getElementById('days').addEventListener('change', function() {});
-        document.getElementById('pricePerDay').addEventListener('input', function() {});
-        document.getElementById('perKmCharge').addEventListener('input', function() {});
+        const forceVehicleNames = {
+            'urbania': 'Force Urbania',
+            'traveller': 'Force Traveller',
+            'trax': 'Force Trax Cruiser'
+        };
 
         // =============================================
-        // LOAD EXISTING PROVIDE ITEMS
+        // REMOVE EXISTING VEHICLE IMAGE
         // =============================================
 
-        function loadExistingProvideItems() {
-            const container = document.getElementById('provideContainer');
-            const items = container.querySelectorAll('.badge-item');
-
-            provideItems = [];
-            items.forEach((item) => {
-                const nameSpan = item.querySelector('.badge-name');
-                const iconImg = item.querySelector('.badge-icon');
-                const name = nameSpan ? nameSpan.textContent : '';
-                let icon = iconImg ? iconImg.getAttribute('src') : null;
-
-                if (name) {
-                    if (icon) {
-                        icon = icon.replace('<?= APP_URL ?>', '');
-                        if (!icon.startsWith('uploads/') && !icon.startsWith('http')) {
-                            icon = 'uploads/' + icon;
-                        }
+        window.removeExistingVehicleImage = function() {
+            Swal.fire({
+                title: 'Remove Image?',
+                text: 'This will remove the current vehicle image.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, remove it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const imageContainer = document.getElementById('existingVehicleImage');
+                    if (imageContainer) {
+                        imageContainer.remove();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Removed!',
+                            text: 'Image will be removed when you save.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
                     }
-
-                    provideItems.push({
-                        name: name,
-                        icon: icon,
-                        iconFile: null,
-                        iconPreview: null
-                    });
                 }
             });
-
-            container.innerHTML = '';
-            renderProvideItems();
-            updateProvideCount();
-        }
+        };
 
         // =============================================
-        // WHAT WE PROVIDE - BADGE STYLE
+        // FORCE VEHICLE IMAGE UPLOAD
         // =============================================
 
-        function setupProvideIconUpload() {
-            const box = document.getElementById('provideIconBox');
-            const input = document.getElementById('provideIcon');
+        function setupForceImageUpload() {
+            const box = document.getElementById('forceImageBox');
+            const input = document.getElementById('forceImage');
+            const preview = document.getElementById('forceImagePreview');
+            const previewImg = document.getElementById('forceImagePreviewImg');
 
-            if (box) {
-                box.addEventListener('click', function(e) {
+            if (box && input) {
+                const newBox = box.cloneNode(true);
+                box.parentNode.replaceChild(newBox, box);
+
+                newBox.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    input.value = '';
                     input.click();
                 });
-            }
 
-            if (input) {
                 input.addEventListener('change', function(e) {
                     const file = e.target.files[0];
                     if (file) {
-                        if (file.size > 1 * 1024 * 1024) {
+                        if (file.size > 2 * 1024 * 1024) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'File Too Large',
-                                text: 'Icon file must be less than 1MB'
+                                text: 'Image must be less than 2MB'
                             });
                             this.value = '';
                             return;
                         }
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
                         if (!allowedTypes.includes(file.type)) {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Invalid File Type',
-                                text: 'Please upload JPG, PNG, GIF, WebP, or SVG'
+                                text: 'Please upload JPG, PNG, GIF, or WebP'
                             });
                             this.value = '';
                             return;
                         }
-
-                        currentIconFile = file;
-
+                        forceImageFile = file;
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            currentIconPreview = e.target.result;
-                            document.getElementById('provideIconPreviewImg').src = e.target.result;
-                            document.getElementById('provideIconPreviewName').textContent = file.name;
-                            document.getElementById('provideIconPreview').style.display = 'block';
-                            document.getElementById('provideIconBox').classList.add('has-file');
+                            previewImg.src = e.target.result;
+                            preview.classList.add('show');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Image Uploaded!',
+                                text: 'Vehicle image uploaded successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
                         };
                         reader.readAsDataURL(file);
                     }
@@ -977,18 +1372,74 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             }
         }
 
-        function removeProvideIconPreview() {
-            currentIconFile = null;
-            currentIconPreview = null;
-            document.getElementById('provideIcon').value = '';
-            document.getElementById('provideIconPreview').style.display = 'none';
-            document.getElementById('provideIconBox').classList.remove('has-file');
+        // =============================================
+        // VEHICLE IMAGE UPLOAD (Custom)
+        // =============================================
+
+        function setupVehicleImageUpload() {
+            const box = document.getElementById('vehicleImageBox');
+            const input = document.getElementById('vehicleImage');
+            const preview = document.getElementById('vehicleImagePreview');
+            const previewImg = document.getElementById('vehicleImagePreviewImg');
+
+            if (box && input) {
+                const newBox = box.cloneNode(true);
+                box.parentNode.replaceChild(newBox, box);
+
+                newBox.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    input.click();
+                });
+
+                input.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        if (file.size > 2 * 1024 * 1024) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'File Too Large',
+                                text: 'Image must be less than 2MB'
+                            });
+                            this.value = '';
+                            return;
+                        }
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                        if (!allowedTypes.includes(file.type)) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid File Type',
+                                text: 'Please upload JPG, PNG, GIF, or WebP'
+                            });
+                            this.value = '';
+                            return;
+                        }
+                        vehicleImageFile = file;
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImg.src = e.target.result;
+                            preview.classList.add('show');
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Image Uploaded!',
+                                text: 'Vehicle image uploaded successfully.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
         }
+
+        // =============================================
+        // WHAT WE PROVIDE - TEXT ONLY
+        // =============================================
 
         function addProvideItem() {
             const input = document.getElementById('provideInput');
             const name = input.value.trim();
-
             if (!name) {
                 Swal.fire({
                     icon: 'warning',
@@ -998,8 +1449,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 input.focus();
                 return;
             }
-
-            const existing = provideItems.find(i => i.name.toLowerCase() === name.toLowerCase());
+            const existing = provideItems.find(i => i.toLowerCase() === name.toLowerCase());
             if (existing) {
                 Swal.fire({
                     icon: 'warning',
@@ -1010,35 +1460,14 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 return;
             }
 
-            const iconFile = currentIconFile;
-            const iconPreview = currentIconPreview;
-
-            provideItems.push({
-                name: name,
-                icon: iconFile ? iconFile.name : null,
-                iconFile: iconFile,
-                iconPreview: iconPreview
-            });
-
+            provideItems.push(name);
             renderProvideItems();
-            updateProvideCount();
-
             input.value = '';
-            document.getElementById('provideIcon').value = '';
-            document.getElementById('provideIconPreview').style.display = 'none';
-            document.getElementById('provideIconBox').classList.remove('has-file');
-            currentIconFile = null;
-            currentIconPreview = null;
         }
 
         function removeProvideItem(index) {
-            const item = provideItems[index];
-            if (item && item.icon && !item.iconPreview) {
-                deletedProvideItems.push(item.icon);
-            }
             provideItems.splice(index, 1);
             renderProvideItems();
-            updateProvideCount();
         }
 
         function renderProvideItems() {
@@ -1053,40 +1482,123 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             provideItems.forEach((item, index) => {
                 const badge = document.createElement('span');
                 badge.className = 'badge-item';
-
-                let iconHtml = '';
-                if (item.iconPreview) {
-                    iconHtml = `<img src="${item.iconPreview}" class="badge-icon" alt="icon">`;
-                } else if (item.icon && typeof item.icon === 'string') {
-                    let iconSrc = item.icon;
-                    if (!iconSrc.startsWith('http://') && !iconSrc.startsWith('https://')) {
-                        if (iconSrc.startsWith('uploads/')) {
-                            iconSrc = '<?= APP_URL ?>' + iconSrc;
-                        } else {
-                            iconSrc = '<?= APP_URL ?>uploads/' + iconSrc.replace(/^uploads\//, '');
-                        }
-                    }
-                    iconHtml = `<img src="${iconSrc}" class="badge-icon" alt="icon">`;
-                }
-
                 badge.innerHTML = `
-                    ${iconHtml}
-                    <span class="badge-name">${escapeHtml(item.name)}</span>
+                    <span class="badge-name">${escapeHtml(item)}</span>
                     <span class="remove-badge" onclick="removeProvideItem(${index})">&times;</span>
                 `;
                 container.appendChild(badge);
             });
         }
 
-        function updateProvideCount() {
-            const count = provideItems.length;
-            document.getElementById('provideCount').textContent = count + ' Item' + (count > 1 ? 's' : '');
-        }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // =============================================
+        // VEHICLE SELECTION
+        // =============================================
+
+        function selectVehicleOption(option) {
+            selectedOption = option;
+
+            document.querySelectorAll('.vehicle-option-card').forEach(card => {
+                card.classList.remove('active');
+                if (card.dataset.option === option) {
+                    card.classList.add('active');
+                }
+            });
+
+            document.getElementById('dbVehicles').style.display = 'none';
+            document.getElementById('forceVehicles').style.display = 'none';
+            document.getElementById('customVehicle').style.display = 'none';
+            document.getElementById('forceImageUpload').style.display = 'none';
+            document.getElementById('vehicleDetails').style.display = 'block';
+
+            if (option === 'db') {
+                document.getElementById('dbVehicles').style.display = 'block';
+            } else if (option === 'urbania' || option === 'traveller' || option === 'trax') {
+                document.getElementById('forceVehicles').style.display = 'block';
+                document.getElementById('forceImageUpload').style.display = 'block';
+                document.getElementById('forceVehicleSelect').value = option;
+                showSeatOptions(option);
+            } else if (option === 'custom') {
+                document.getElementById('customVehicle').style.display = 'block';
+            }
+        }
+
+        function showSeatOptions(type) {
+            const container = document.getElementById('seatOptions');
+            const containerDiv = document.getElementById('seatOptionsContainer');
+            container.innerHTML = '';
+
+            const seats = forceSeats[type];
+            if (!seats) {
+                containerDiv.style.display = 'none';
+                return;
+            }
+
+            containerDiv.style.display = 'block';
+
+            Object.keys(seats).forEach(seat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'seat-option';
+                btn.textContent = seats[seat];
+                btn.dataset.seats = seat;
+                btn.onclick = function() {
+                    document.querySelectorAll('.seat-option').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const vehicleName = forceVehicleNames[type];
+                    document.getElementById('selectedVehicleName').value = vehicleName;
+                    document.getElementById('selectedSeats').value = seat;
+                    document.getElementById('selectedVehicleType').value = 'Force';
+                    document.getElementById('selectedVehicleId').value = 0;
+
+                    document.getElementById('displayVehicleName').value = vehicleName;
+                    document.getElementById('displaySeats').value = seat + ' Seats';
+                    document.getElementById('displayVehicleType').value = 'Force';
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function selectForceVehicle(select) {
+            const type = select.value;
+            if (type) {
+                showSeatOptions(type);
+                document.getElementById('forceImageUpload').style.display = 'block';
+            } else {
+                document.getElementById('seatOptionsContainer').style.display = 'none';
+                document.getElementById('forceImageUpload').style.display = 'none';
+            }
+        }
+
+        function selectDbVehicle(select) {
+            const option = select.options[select.selectedIndex];
+            if (select.value) {
+                const vehicleName = option.dataset.name;
+                const seats = option.dataset.seats;
+                const vehicleType = option.dataset.type;
+                const price = option.dataset.price;
+                const perKm = option.dataset.perkm;
+
+                document.getElementById('selectedVehicleId').value = select.value;
+                document.getElementById('selectedVehicleName').value = vehicleName;
+                document.getElementById('selectedSeats').value = seats;
+                document.getElementById('selectedVehicleType').value = vehicleType;
+                document.getElementById('selectedPerDayAmount').value = price;
+                document.getElementById('selectedPerKmCharge').value = perKm;
+
+                document.getElementById('displayVehicleName').value = vehicleName;
+                document.getElementById('displaySeats').value = seats + ' Seats';
+                document.getElementById('displayVehicleType').value = vehicleType;
+
+                document.getElementById('pricePerDay').value = price;
+                document.getElementById('perKmCharge').value = perKm;
+            }
         }
 
         // =============================================
@@ -1126,15 +1638,121 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                         </div>
                     </div>
                 </div>
-                <div class="stop-price">
-                    Distance: <span class="stop-distance">--</span> km | 
-                    Price: <span class="stop-price-amount"><?= htmlspecialchars($currencySymbol ?? '$') ?>0.00</span>
+                <div class="stop-price-row">
+                    <div class="form-group">
+                        <label class="form-label">Distance (km) <span class="required">*</span></label>
+                        <div class="input-group">
+                            <input type="number" class="form-control stop-distance-input" step="0.01" placeholder="0.00" value="0">
+                            <button type="button" class="auto-fill-btn" onclick="autoFillDistance(${stopNumber})">
+                                <i class="bi bi-geo-alt"></i> Auto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price for this Stop <span class="required">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text" style="border-radius:10px 0 0 10px;border:2px solid #e8edf3;border-right:none;background:rgba(255,255,255,0.6);font-weight:600;">
+                                <?= htmlspecialchars($currencySymbol) ?>
+                            </span>
+                            <input type="number" class="form-control stop-price-input" step="0.01" placeholder="0.00" value="0" style="border-radius:0 10px 10px 0;">
+                        </div>
+                    </div>
+                </div>
+                <div class="stop-total-price">
+                    Total: <span class="stop-total-amount"><?= htmlspecialchars($currencySymbol) ?>0.00</span>
                 </div>
             `;
             container.appendChild(stopDiv);
             setupStopAutocomplete(stopNumber);
+            setupStopPriceCalculation(stopNumber);
             updateStopCount();
         }
+
+        function setupStopPriceCalculation(stopNumber) {
+            const stopElement = document.getElementById('stop-' + stopNumber);
+            const distanceInput = stopElement.querySelector('.stop-distance-input');
+            const priceInput = stopElement.querySelector('.stop-price-input');
+            const totalSpan = stopElement.querySelector('.stop-total-amount');
+            const perKmCharge = document.getElementById('perKmCharge');
+
+            function calculateTotal() {
+                const distance = parseFloat(distanceInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const perKm = parseFloat(perKmCharge.value) || 0;
+
+                let total = price;
+                if (price === 0 && distance > 0) {
+                    total = distance * perKm;
+                    priceInput.value = total.toFixed(2);
+                }
+
+                totalSpan.textContent = '<?= htmlspecialchars($currencySymbol) ?>' + total.toFixed(2);
+            }
+
+            distanceInput.addEventListener('input', function() {
+                const distance = parseFloat(this.value) || 0;
+                const perKm = parseFloat(perKmCharge.value) || 0;
+                if (distance > 0) {
+                    const calculatedPrice = distance * perKm;
+                    const priceInput = stopElement.querySelector('.stop-price-input');
+                    priceInput.value = calculatedPrice.toFixed(2);
+                }
+                calculateTotal();
+            });
+
+            priceInput.addEventListener('input', calculateTotal);
+            perKmCharge.addEventListener('input', function() {
+                const distance = parseFloat(distanceInput.value) || 0;
+                if (distance > 0) {
+                    const perKm = parseFloat(this.value) || 0;
+                    const calculatedPrice = distance * perKm;
+                    priceInput.value = calculatedPrice.toFixed(2);
+                }
+                calculateTotal();
+            });
+
+            calculateTotal();
+        }
+
+        window.autoFillDistance = function(stopNumber) {
+            const stopElement = document.getElementById('stop-' + stopNumber);
+            const pickupInput = stopElement.querySelector('.pickup-input');
+            const dropInput = stopElement.querySelector('.drop-input');
+            const distanceInput = stopElement.querySelector('.stop-distance-input');
+            const priceInput = stopElement.querySelector('.stop-price-input');
+            const perKmCharge = parseFloat(document.getElementById('perKmCharge').value) || 0;
+
+            const pickupCoords = stopCoords[stopNumber] ? stopCoords[stopNumber].pickup : null;
+            const dropCoords = stopCoords[stopNumber] ? stopCoords[stopNumber].drop : null;
+
+            if (pickupCoords && dropCoords) {
+                const distance = calculateDistance(
+                    pickupCoords.lat, pickupCoords.lng,
+                    dropCoords.lat, dropCoords.lng
+                );
+                distanceInput.value = distance.toFixed(2);
+                const calculatedPrice = distance * perKmCharge;
+                priceInput.value = calculatedPrice.toFixed(2);
+
+                const event = new Event('input');
+                distanceInput.dispatchEvent(event);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Distance Auto-Filled!',
+                    text: `Distance: ${distance.toFixed(2)} km | Price: ${'<?= htmlspecialchars($currencySymbol) ?>'}${calculatedPrice.toFixed(2)}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Auto-Fill',
+                    text: 'Please select pickup and drop locations from the map first.',
+                    confirmButtonColor: '#0b2a3e'
+                });
+            }
+        };
 
         function removeStop(stopId) {
             const stop = document.getElementById(stopId);
@@ -1284,7 +1902,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         }
 
         // =============================================
-        // MAP - INDEPENDENT STOPS WITH PER-STOP DISTANCE
+        // MAP
         // =============================================
 
         function initMap() {
@@ -1298,52 +1916,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(map);
-            loadExistingStopCoords();
-        }
-
-        function loadExistingStopCoords() {
-            const stopElements = document.querySelectorAll('.stop-card');
-            stopElements.forEach((stopEl, index) => {
-                const stopNum = index + 1;
-                const pickupInput = stopEl.querySelector('.pickup-input');
-                const dropInput = stopEl.querySelector('.drop-input');
-                if (pickupInput && pickupInput.value) {
-                    geocodeAddress(pickupInput.value, 'pickup', stopNum);
-                }
-                if (dropInput && dropInput.value) {
-                    geocodeAddress(dropInput.value, 'drop', stopNum);
-                }
-            });
-        }
-
-        function geocodeAddress(address, type, stopNumber) {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=in`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.length > 0) {
-                        const lat = parseFloat(data[0].lat);
-                        const lon = parseFloat(data[0].lon);
-                        if (!stopCoords[stopNumber]) stopCoords[stopNumber] = {
-                            pickup: null,
-                            drop: null
-                        };
-                        if (type === 'pickup') {
-                            stopCoords[stopNumber].pickup = {
-                                lat: lat,
-                                lng: lon
-                            };
-                        } else {
-                            stopCoords[stopNumber].drop = {
-                                lat: lat,
-                                lng: lon
-                            };
-                        }
-                        updateMap();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error geocoding address:', error);
-                });
         }
 
         function updateMap() {
@@ -1359,12 +1931,16 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
             stopElements.forEach((stopEl, index) => {
                 const stopNum = index + 1;
-                if (stopCoords[stopNum] && stopCoords[stopNum].pickup) {
+                const pickupInput = stopEl.querySelector('.pickup-input');
+                const dropInput = stopEl.querySelector('.drop-input');
+
+                if (pickupInput && pickupInput.value && stopCoords[stopNum] && stopCoords[stopNum].pickup) {
                     const coords = stopCoords[stopNum].pickup;
                     allCoords.push(coords);
                     addMarker(coords.lat, coords.lng, 'P' + stopNum, '#28a745');
                 }
-                if (stopCoords[stopNum] && stopCoords[stopNum].drop) {
+
+                if (dropInput && dropInput.value && stopCoords[stopNum] && stopCoords[stopNum].drop) {
                     const coords = stopCoords[stopNum].drop;
                     allCoords.push(coords);
                     addMarker(coords.lat, coords.lng, 'D' + stopNum, '#dc3545');
@@ -1384,9 +1960,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
         function drawIndependentRoutes() {
             const stopElements = document.querySelectorAll('.stop-card');
-            const perKmCharge = parseFloat(document.getElementById('perKmCharge').value) || 0;
 
-            // Clear previous distance info
             const container = document.getElementById('stopDistancesContainer');
             container.innerHTML = '';
 
@@ -1396,7 +1970,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                 const dropCoords = stopCoords[stopNum] ? stopCoords[stopNum].drop : null;
 
                 if (pickupCoords && dropCoords) {
-                    // Draw route
                     const latLngs = [
                         [pickupCoords.lat, pickupCoords.lng],
                         [dropCoords.lat, dropCoords.lng]
@@ -1416,7 +1989,6 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                         lineJoin: 'round'
                     }).addTo(map);
 
-                    // Add distance label on map
                     const midLat = (pickupCoords.lat + dropCoords.lat) / 2;
                     const midLng = (pickupCoords.lng + dropCoords.lng) / 2;
 
@@ -1429,17 +2001,18 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                         })
                     }).addTo(map);
 
-                    // Update stop card
-                    const distanceSpan = stopEl.querySelector('.stop-distance');
-                    const priceSpan = stopEl.querySelector('.stop-price-amount');
-                    if (distanceSpan) {
-                        distanceSpan.textContent = d.toFixed(1);
-                    }
-                    if (priceSpan) {
-                        priceSpan.textContent = '<?= htmlspecialchars($currencySymbol) ?>' + (d * perKmCharge).toFixed(2);
+                    const distanceInput = stopEl.querySelector('.stop-distance-input');
+                    if (distanceInput && parseFloat(distanceInput.value) === 0) {
+                        distanceInput.value = d.toFixed(2);
+                        const perKmCharge = parseFloat(document.getElementById('perKmCharge').value) || 0;
+                        const priceInput = stopEl.querySelector('.stop-price-input');
+                        if (priceInput) {
+                            priceInput.value = (d * perKmCharge).toFixed(2);
+                        }
+                        const event = new Event('input');
+                        distanceInput.dispatchEvent(event);
                     }
 
-                    // Add per-stop distance to the info container
                     const stopInfo = document.createElement('div');
                     stopInfo.style.cssText = 'display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f3f7;font-size:0.8rem;';
                     stopInfo.innerHTML = `
@@ -1447,13 +2020,12 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                             <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${color};margin-right:8px;"></span>
                             Stop ${stopNum}
                         </span>
-                        <span><strong>${d.toFixed(1)} km</strong> (${'<?= htmlspecialchars($currencySymbol) ?>' + (d * perKmCharge).toFixed(2)})</span>
+                        <span><strong>${d.toFixed(1)} km</strong></span>
                     `;
                     container.appendChild(stopInfo);
                 }
             });
 
-            // Show the container
             document.getElementById('directionsInfo').classList.add('show');
         }
 
@@ -1486,40 +2058,184 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
         // =============================================
 
         document.addEventListener('DOMContentLoaded', function() {
-            loadExistingProvideItems();
             initMap();
-            setupProvideIconUpload();
+            setupVehicleImageUpload();
+            setupForceImageUpload();
+            renderProvideItems();
 
-            const form = document.getElementById('travelBookingForm');
+            // Setup existing stops
+            const stopElements = document.querySelectorAll('.stop-card');
+            stopElements.forEach((stopEl, index) => {
+                const stopNumber = index + 1;
+                setupStopAutocomplete(stopNumber);
+                setupStopPriceCalculation(stopNumber);
+
+                <?php foreach ($stops as $index => $stop): ?>
+                    <?php if (isset($stop['pickup_lat']) && isset($stop['pickup_lng'])): ?>
+                        if (stopNumber === <?= $index + 1 ?>) {
+                            if (!stopCoords[stopNumber]) stopCoords[stopNumber] = {
+                                pickup: null,
+                                drop: null
+                            };
+                            stopCoords[stopNumber].pickup = {
+                                lat: <?= $stop['pickup_lat'] ?>,
+                                lng: <?= $stop['pickup_lng'] ?>
+                            };
+                        }
+                    <?php endif; ?>
+                    <?php if (isset($stop['drop_lat']) && isset($stop['drop_lng'])): ?>
+                        if (stopNumber === <?= $index + 1 ?>) {
+                            if (!stopCoords[stopNumber]) stopCoords[stopNumber] = {
+                                pickup: null,
+                                drop: null
+                            };
+                            stopCoords[stopNumber].drop = {
+                                lat: <?= $stop['drop_lat'] ?>,
+                                lng: <?= $stop['drop_lng'] ?>
+                            };
+                        }
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            });
+
+            updateStopCount();
+
+            setTimeout(updateMap, 500);
+
+            // Select default option based on vehicle
+            if (<?= $booking['car_id'] ?> === 0) {
+                <?php
+                $isForce = false;
+                $forceType = '';
+                foreach ($forceVehicles as $key => $fv) {
+                    if (stripos($booking['car_name'], $fv['name']) !== false) {
+                        $isForce = true;
+                        $forceType = $key;
+                        break;
+                    }
+                }
+                ?>
+                <?php if ($isForce): ?>
+                    selectVehicleOption('<?= $forceType ?>');
+                    document.getElementById('forceVehicleSelect').value = '<?= $forceType ?>';
+                    showSeatOptions('<?= $forceType ?>');
+                    setTimeout(function() {
+                        const seatOptions = document.querySelectorAll('.seat-option');
+                        seatOptions.forEach(btn => {
+                            if (btn.dataset.seats == <?= $booking['seat_count'] ?>) {
+                                btn.click();
+                            }
+                        });
+                    }, 100);
+                <?php else: ?>
+                    selectVehicleOption('custom');
+                    document.getElementById('customVehicleName').value = '<?= htmlspecialchars($booking['car_name']) ?>';
+                    document.getElementById('customSeats').value = '<?= $booking['seat_count'] ?>';
+                    document.getElementById('customVehicleType').value = '<?= htmlspecialchars($booking['car_type']) ?>';
+                <?php endif; ?>
+            } else {
+                selectVehicleOption('db');
+                document.getElementById('dbVehicleSelect').value = <?= $booking['car_id'] ?>;
+                document.getElementById('dbVehicleSelect').dispatchEvent(new Event('change'));
+            }
+
+            const form = document.getElementById('editTravelBookingForm');
 
             if (form) {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
 
-                    const carSelect = document.getElementById('carSelect');
-                    const carName = document.getElementById('carName').value;
-                    const carType = document.getElementById('carType').value;
-                    const seatCount = document.getElementById('seatCount').value;
-                    const pricePerDay = document.getElementById('pricePerDay').value;
-                    const perKmCharge = document.getElementById('perKmCharge').value;
-                    const days = document.getElementById('days').value;
+                    let vehicleName = document.getElementById('selectedVehicleName').value;
+                    let seats = document.getElementById('selectedSeats').value;
+                    let vehicleType = document.getElementById('selectedVehicleType').value;
+                    let vehicleImage = null;
+                    let vehicleId = document.getElementById('selectedVehicleId').value || 0;
 
-                    if (!carSelect.value) {
+                    if (selectedOption === 'custom') {
+                        vehicleName = document.getElementById('customVehicleName').value.trim();
+                        seats = document.getElementById('customSeats').value.trim();
+                        vehicleType = document.getElementById('customVehicleType').value.trim();
+
+                        if (!vehicleName) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: 'Please enter vehicle name'
+                            });
+                            return;
+                        }
+                        if (!seats || seats <= 0) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: 'Please enter seating capacity'
+                            });
+                            return;
+                        }
+
+                        document.getElementById('selectedVehicleName').value = vehicleName;
+                        document.getElementById('selectedSeats').value = seats;
+                        document.getElementById('selectedVehicleType').value = vehicleType || 'Custom';
+                        document.getElementById('selectedVehicleId').value = 0;
+                        vehicleImage = vehicleImageFile;
+                    }
+
+                    if (selectedOption === 'urbania' || selectedOption === 'traveller' || selectedOption === 'trax') {
+                        vehicleImage = forceImageFile;
+                        vehicleId = 0;
+                    }
+
+                    if (!vehicleName) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Validation Error',
-                            text: 'Please select a car'
+                            text: 'Please select a vehicle'
                         });
+                        return;
+                    }
+
+                    if (!seats || seats <= 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please select seating capacity'
+                        });
+                        return;
+                    }
+
+                    const pricePerDay = document.getElementById('pricePerDay').value.trim();
+                    const perKmCharge = document.getElementById('perKmCharge').value.trim();
+
+                    if (!pricePerDay || parseFloat(pricePerDay) <= 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please enter valid price per day'
+                        });
+                        document.getElementById('pricePerDay').focus();
+                        return;
+                    }
+                    if (!perKmCharge || parseFloat(perKmCharge) <= 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please enter valid per KM charge'
+                        });
+                        document.getElementById('perKmCharge').focus();
                         return;
                     }
 
                     const stops = [];
                     const stopElements = document.querySelectorAll('.stop-card');
                     let isValid = true;
+                    let totalDistance = 0;
+                    let totalStopPrice = 0;
 
                     stopElements.forEach((stopEl, index) => {
                         const pickup = stopEl.querySelector('.pickup-input').value.trim();
                         const drop = stopEl.querySelector('.drop-input').value.trim();
+                        const distance = parseFloat(stopEl.querySelector('.stop-distance-input').value) || 0;
+                        const price = parseFloat(stopEl.querySelector('.stop-price-input').value) || 0;
 
                         if (!pickup || !drop) {
                             isValid = false;
@@ -1531,17 +2247,32 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                             return;
                         }
 
+                        if (distance <= 0) {
+                            isValid = false;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: `Please enter distance for Stop ${index + 1}`
+                            });
+                            return;
+                        }
+
+                        if (price <= 0) {
+                            isValid = false;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: `Please enter price for Stop ${index + 1}`
+                            });
+                            return;
+                        }
+
+                        totalDistance += distance;
+                        totalStopPrice += price;
+
                         const stopNum = index + 1;
                         const pickupCoords = stopCoords[stopNum] ? stopCoords[stopNum].pickup : null;
                         const dropCoords = stopCoords[stopNum] ? stopCoords[stopNum].drop : null;
-
-                        let distance = 0;
-                        if (pickupCoords && dropCoords) {
-                            distance = calculateDistance(
-                                pickupCoords.lat, pickupCoords.lng,
-                                dropCoords.lat, dropCoords.lng
-                            );
-                        }
 
                         stops.push({
                             pickup: pickup,
@@ -1551,21 +2282,15 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                             drop_lat: dropCoords ? dropCoords.lat : null,
                             drop_lng: dropCoords ? dropCoords.lng : null,
                             distance: distance,
-                            price: distance * parseFloat(perKmCharge || 0)
+                            price: price
                         });
                     });
 
                     if (!isValid) return;
 
-                    const dayPrice = parseFloat(pricePerDay) * parseInt(days);
-                    let kmPrice = 0;
-                    stops.forEach(s => kmPrice += s.price);
-                    const totalPrice = dayPrice + kmPrice;
-
-                    const provideData = provideItems.map(item => ({
-                        name: item.name,
-                        icon: item.icon || null
-                    }));
+                    const days = parseInt(document.getElementById('days').value) || 1;
+                    const dayPrice = parseFloat(pricePerDay) * days;
+                    const totalPrice = dayPrice + totalStopPrice;
 
                     const submitBtn = document.getElementById('submitBtn');
                     const submitText = document.getElementById('submitText');
@@ -1576,26 +2301,21 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
 
                     const formData = new FormData();
                     formData.append('id', document.getElementById('bookingId').value);
-                    formData.append('car_id', carSelect.value);
-                    formData.append('car_name', carName);
-                    formData.append('car_type', carType);
-                    formData.append('seat_count', seatCount);
+                    formData.append('car_id', vehicleId);
+                    formData.append('car_name', document.getElementById('selectedVehicleName').value);
+                    formData.append('car_type', document.getElementById('selectedVehicleType').value || '');
+                    formData.append('seat_count', document.getElementById('selectedSeats').value);
                     formData.append('days', days);
                     formData.append('per_day_price', pricePerDay);
                     formData.append('per_km_charge', perKmCharge);
                     formData.append('stops', JSON.stringify(stops));
                     formData.append('total_price', totalPrice);
-                    formData.append('total_distance', stops.reduce((sum, s) => sum + s.distance, 0));
-                    formData.append('what_we_provide', JSON.stringify(provideData));
-                    formData.append('status', document.getElementById('status').value);
-                    formData.append('deleted_provide_icons', JSON.stringify(deletedProvideItems));
+                    formData.append('total_distance', totalDistance);
+                    formData.append('what_we_provide', JSON.stringify(provideItems));
 
-                    provideItems.forEach((item) => {
-                        if (item.iconFile instanceof File) {
-                            formData.append('provide_icons[]', item.iconFile);
-                            formData.append('provide_icon_names[]', item.name);
-                        }
-                    });
+                    if (vehicleImage) {
+                        formData.append('vehicle_image', vehicleImage);
+                    }
 
                     fetch('ajax/edit-travel-booking.php', {
                             method: 'POST',
@@ -1610,9 +2330,9 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                             if (data.success) {
                                 Swal.fire({
                                     icon: 'success',
-                                    title: 'Updated!',
+                                    title: 'Booking Updated!',
                                     text: data.message,
-                                    timer: 2000,
+                                    timer: 3000,
                                     showConfirmButton: false
                                 }).then(() => {
                                     window.location.href = 'travel-bookings.php';
@@ -1620,7 +2340,7 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
                             } else {
                                 Swal.fire({
                                     icon: 'error',
-                                    title: 'Error!',
+                                    title: 'Update Failed',
                                     text: data.message
                                 });
                             }
@@ -1640,13 +2360,16 @@ $provide = json_decode($booking['what_we_provide'], true) ?: [];
             }
         });
 
-        // Make functions global
+        // Make functions globally accessible
+        window.selectVehicleOption = selectVehicleOption;
+        window.selectForceVehicle = selectForceVehicle;
+        window.selectDbVehicle = selectDbVehicle;
         window.addStop = addStop;
         window.removeStop = removeStop;
-        window.initMap = initMap;
         window.addProvideItem = addProvideItem;
         window.removeProvideItem = removeProvideItem;
-        window.removeProvideIconPreview = removeProvideIconPreview;
+        window.initMap = initMap;
+        window.autoFillDistance = autoFillDistance;
     </script>
 </body>
 

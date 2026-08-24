@@ -1,6 +1,6 @@
 <?php
 // =============================================
-// AJAX UPDATE CAR RENTAL - WITH IMAGE DELETE
+// AJAX UPDATE VEHICLE - WITH IMAGE DELETE
 // =============================================
 
 // Enable error reporting for debugging
@@ -28,22 +28,27 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     // Get form data
     $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-    $carName = isset($_POST['car_name']) ? trim($_POST['car_name']) : '';
-    $carModel = isset($_POST['car_model']) ? trim($_POST['car_model']) : '';
-    $carBrand = isset($_POST['car_brand']) ? trim($_POST['car_brand']) : '';
-    
-    // Get car types as JSON and convert to comma separated string
-    $carTypesJson = isset($_POST['car_type']) ? $_POST['car_type'] : '[]';
-    $carTypesArray = json_decode($carTypesJson, true) ?: [];
-    
-    // Filter out empty values and convert array to comma-separated string
-    $carTypesArray = array_filter($carTypesArray, function($val) {
+    $vehicleName = isset($_POST['vehicle_name']) ? trim($_POST['vehicle_name']) : '';
+    $vehicleModel = isset($_POST['vehicle_model']) ? trim($_POST['vehicle_model']) : '';
+    $vehicleBrand = isset($_POST['vehicle_brand']) ? trim($_POST['vehicle_brand']) : '';
+
+    // Get vehicle types as JSON
+    $vehicleTypesJson = isset($_POST['vehicle_type']) ? $_POST['vehicle_type'] : '[]';
+    $vehicleTypesArray = json_decode($vehicleTypesJson, true) ?: [];
+    $vehicleTypesArray = array_filter($vehicleTypesArray, function ($val) {
         return $val !== '' && $val !== null;
     });
-    $carType = implode(', ', $carTypesArray);
-    
-    $perDayAmount = isset($_POST['per_day_amount']) ? floatval($_POST['per_day_amount']) : 0;
-    $perKmCharge = isset($_POST['per_km_charge']) ? floatval($_POST['per_km_charge']) : 0;
+    $vehicleType = json_encode(array_values($vehicleTypesArray));
+
+    // Pricing fields
+    $pricingType = isset($_POST['pricing_type']) ? trim($_POST['pricing_type']) : 'perday';
+    $perDayAmount = isset($_POST['per_day_amount']) && !empty($_POST['per_day_amount']) ? floatval($_POST['per_day_amount']) : 0;
+    $perKmCharge = isset($_POST['per_km_charge']) && !empty($_POST['per_km_charge']) ? floatval($_POST['per_km_charge']) : 0;
+    $packageDays = isset($_POST['package_days']) && !empty($_POST['package_days']) ? intval($_POST['package_days']) : null;
+    $packagePrice = isset($_POST['package_price']) && !empty($_POST['package_price']) ? floatval($_POST['package_price']) : null;
+    $packageKmLimit = isset($_POST['package_km_limit']) && !empty($_POST['package_km_limit']) ? intval($_POST['package_km_limit']) : null;
+    $extraKmCharge = isset($_POST['extra_km_charge']) && !empty($_POST['extra_km_charge']) ? floatval($_POST['extra_km_charge']) : null;
+
     $fuelType = isset($_POST['fuel_type']) ? trim($_POST['fuel_type']) : '';
     $transmission = isset($_POST['transmission']) ? trim($_POST['transmission']) : '';
     $seatingCapacity = isset($_POST['seating_capacity']) ? intval($_POST['seating_capacity']) : 4;
@@ -56,7 +61,7 @@ try {
     $deletedImages = json_decode($deletedImagesJson, true) ?: [];
 
     // Validate required fields
-    if ($id <= 0 || empty($carName) || empty($carType) || $perDayAmount <= 0 || $perKmCharge <= 0 || $seatingCapacity <= 0) {
+    if ($id <= 0 || empty($vehicleName) || empty($vehicleTypesArray) || $seatingCapacity <= 0) {
         echo json_encode([
             'success' => false,
             'message' => 'Please fill in all required fields'
@@ -64,25 +69,43 @@ try {
         exit();
     }
 
-    // Get existing car data
-    $stmt = $pdo->prepare("SELECT car_image, additional_images FROM car_rentals WHERE id = ?");
-    $stmt->execute([$id]);
-    $existingCar = $stmt->fetch();
+    // Validate pricing based on type
+    if ($pricingType === 'perday') {
+        if ($perDayAmount <= 0 || $perKmCharge <= 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Please enter valid per day amount and per KM charge'
+            ]);
+            exit();
+        }
+    } else {
+        if ($packageDays <= 0 || $packagePrice <= 0 || $packageKmLimit <= 0 || $extraKmCharge <= 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Please enter valid package details'
+            ]);
+            exit();
+        }
+    }
 
-    if (!$existingCar) {
+    // Get existing vehicle data
+    $stmt = $pdo->prepare("SELECT vehicle_image, additional_images FROM vehicles WHERE id = ?");
+    $stmt->execute([$id]);
+    $existingVehicle = $stmt->fetch();
+
+    if (!$existingVehicle) {
         echo json_encode([
             'success' => false,
-            'message' => 'Car not found'
+            'message' => 'Vehicle not found'
         ]);
         exit();
     }
 
-    $mainImagePath = $existingCar['car_image'];
-    $additionalImages = json_decode($existingCar['additional_images'], true) ?: [];
+    $mainImagePath = $existingVehicle['vehicle_image'];
+    $additionalImages = json_decode($existingVehicle['additional_images'], true) ?: [];
 
     // Handle main image delete
     if ($deleteMainImage == 1 && $mainImagePath) {
-        // Delete main image file
         $oldPath = '../' . $mainImagePath;
         if (file_exists($oldPath)) {
             @unlink($oldPath);
@@ -92,7 +115,6 @@ try {
 
     // Handle main image upload
     if (isset($_FILES['main_image']) && $_FILES['main_image']['error'] === UPLOAD_ERR_OK) {
-        // If main image exists, delete it
         if ($mainImagePath) {
             $oldPath = '../' . $mainImagePath;
             if (file_exists($oldPath)) {
@@ -100,7 +122,6 @@ try {
             }
         }
 
-        // Delete old additional images
         if (!empty($additionalImages)) {
             foreach ($additionalImages as $img) {
                 $oldPath = '../' . $img;
@@ -111,9 +132,8 @@ try {
             $additionalImages = [];
         }
 
-        // Delete old folder if it exists
-        if ($existingCar['car_image']) {
-            $fullImagePath = '../' . $existingCar['car_image'];
+        if ($existingVehicle['vehicle_image']) {
+            $fullImagePath = '../' . $existingVehicle['vehicle_image'];
             $imageDir = dirname($fullImagePath);
             $folderPath = dirname($imageDir);
             if (file_exists($folderPath)) {
@@ -121,8 +141,7 @@ try {
             }
         }
 
-        // Create new upload folder
-        $uploadFolder = createUploadFolder('../uploads', 'car-rental');
+        $uploadFolder = createUploadFolder('../uploads', 'vehicle');
         if (!$uploadFolder) {
             echo json_encode([
                 'success' => false,
@@ -131,7 +150,6 @@ try {
             exit();
         }
 
-        // Upload new main image
         $mainImagePath = uploadImage($_FILES['main_image'], $uploadFolder);
         if (!$mainImagePath) {
             echo json_encode([
@@ -142,7 +160,6 @@ try {
         }
         $mainImagePath = str_replace('../', '', $mainImagePath);
 
-        // Handle additional images upload
         if (isset($_FILES['additional_images']) && !empty($_FILES['additional_images']['name'][0])) {
             $additionalFolder = $uploadFolder . '/additional';
             if (!file_exists($additionalFolder)) {
@@ -160,13 +177,11 @@ try {
         // Handle deleted images
         if (!empty($deletedImages)) {
             foreach ($deletedImages as $imgPath) {
-                // Remove from additional images array
                 $key = array_search($imgPath, $additionalImages);
                 if ($key !== false) {
                     unset($additionalImages[$key]);
                 }
 
-                // Delete file
                 $fullPath = '../' . $imgPath;
                 if (file_exists($fullPath)) {
                     @unlink($fullPath);
@@ -175,9 +190,7 @@ try {
             $additionalImages = array_values($additionalImages);
         }
 
-        // Handle additional images upload
         if (isset($_FILES['additional_images']) && !empty($_FILES['additional_images']['name'][0])) {
-            // Get the folder path from existing main image
             if ($mainImagePath) {
                 $fullImagePath = '../' . $mainImagePath;
                 $imageDir = dirname($fullImagePath);
@@ -199,23 +212,29 @@ try {
 
     $additionalImagesJson = !empty($additionalImages) ? json_encode($additionalImages) : null;
 
-    // Update database
-    $stmt = $pdo->prepare("UPDATE car_rentals SET 
-        car_name = ?, car_model = ?, car_brand = ?, car_type = ?, 
-        car_image = ?, additional_images = ?,
-        per_day_amount = ?, per_km_charge = ?, fuel_type = ?, 
-        transmission = ?, seating_capacity = ?, ac_available = ?, 
+    // Update database with pricing fields
+    $stmt = $pdo->prepare("UPDATE vehicles SET 
+        vehicle_name = ?, vehicle_model = ?, vehicle_brand = ?, vehicle_type = ?, 
+        vehicle_image = ?, additional_images = ?,
+        per_day_amount = ?, per_km_charge = ?, pricing_type = ?,
+        package_days = ?, package_price = ?, package_km_limit = ?, extra_km_charge = ?,
+        fuel_type = ?, transmission = ?, seating_capacity = ?, ac_available = ?, 
         description = ?, status = ? WHERE id = ?");
 
     $stmt->execute([
-        $carName,
-        $carModel,
-        $carBrand,
-        $carType,
+        $vehicleName,
+        $vehicleModel,
+        $vehicleBrand,
+        $vehicleType,
         $mainImagePath,
         $additionalImagesJson,
         $perDayAmount,
         $perKmCharge,
+        $pricingType,
+        $packageDays,
+        $packagePrice,
+        $packageKmLimit,
+        $extraKmCharge,
         $fuelType,
         $transmission,
         $seatingCapacity,
@@ -227,20 +246,18 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Car rental updated successfully!'
+        'message' => 'Vehicle updated successfully!'
     ]);
 } catch (PDOException $e) {
-    error_log('Database error in edit-car-rental.php: ' . $e->getMessage());
+    error_log('Database error in edit-vehicle.php: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
-    error_log('Error in edit-car-rental.php: ' . $e->getMessage());
+    error_log('Error in edit-vehicle.php: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'
     ]);
 }
-
-?>
